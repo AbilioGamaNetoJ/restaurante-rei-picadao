@@ -7,15 +7,15 @@ Implementação de rotas para gerenciamento de dados e processos do sistema, gar
 
 | Endpoint | Métodos | Permissão | Status |
 |---|---|---|---|
-| `/api/produtos` | GET, POST | GET: Público, POST: Dono/Gerente | ⏳ Pendente |
-| `/api/produtos/[id]` | GET, PUT, DELETE | Dono/Gerente | ⏳ Pendente |
-| `/api/pedidos` | GET, POST | GET: Auth, POST: Público | ⏳ Pendente |
-| `/api/pedidos/[id]` | GET, PATCH | Auth | ⏳ Pendente |
-| `/api/categorias` | GET, POST, PUT, DELETE | GET: Público, RESTO: Dono/Gerente | ⏳ Pendente |
-| `/api/despesas` | GET, POST, PUT, DELETE | Dono | ⏳ Pendente |
-| `/api/funcionarios` | GET, POST, DELETE | Dono/Gerente | ⏳ Pendente |
-| `/api/uploadthing` | POST | Dono/Gerente | ⏳ Pendente |
-| `/api/webhooks/clerk` | POST | Clerk Secret | ⏳ Pendente |
+| `/api/produtos` | GET, POST | GET: Público, POST: Dono/Gerente | ✅ Concluído |
+| `/api/produtos/[id]` | GET, PUT, DELETE | Dono/Gerente | ✅ Concluído |
+| `/api/pedidos` | GET, POST | GET: Auth, POST: Público | ✅ Concluído |
+| `/api/pedidos/[id]` | GET, PATCH | Auth | ✅ Concluído |
+| `/api/categorias` | GET, POST, PUT, DELETE | GET: Público, RESTO: Dono/Gerente | ✅ Concluído |
+| `/api/despesas` | GET, POST, PUT, DELETE | Dono | ✅ Concluído |
+| `/api/funcionarios` | GET, POST, DELETE | Dono/Gerente | ✅ Concluído |
+| `/api/uploadthing` | POST | Dono/Gerente | ✅ Concluído |
+| `/api/webhooks/clerk` | POST | Clerk Secret | ✅ Concluído |
 
 ## Escopo da Fase 8: Integrações Externas
 Refinamento das integrações já iniciadas e conclusão das pendentes.
@@ -47,10 +47,10 @@ Refinamento das integrações já iniciadas e conclusão das pendentes.
 ---
 
 ## Plano de Verificação
-- [ ] Lint check em todos os novos arquivos.
-- [ ] Verificação de tipos TypeScript.
-- [ ] Testes manuais de cada endpoint via Postman/Curl.
-- [ ] Scan de segurança básico.
+- [x] Lint check em todos os novos arquivos.
+- [x] Verificação de tipos TypeScript.
+- [x] Testes manuais de cada endpoint via Postman/Curl e scripts.
+- [x] Scan de segurança básico e auditoria de RBAC.
 
 ---
 

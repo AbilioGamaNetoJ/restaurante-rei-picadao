@@ -44,7 +44,6 @@ export async function calculateDistance(
             },
           },
         },
-        routeObjective: "ROUTE_OBJECTIVE_UNSPECIFIED",
       },
     ],
     destinations: [
@@ -75,16 +74,22 @@ export async function calculateDistance(
     });
 
     const data = await res.json();
+    console.log("Routes API response:", JSON.stringify(data, null, 2));
 
     if (!Array.isArray(data) || data.length === 0) {
-      console.error("Routes API error:", data);
+      console.error("Routes API error: Not an array or empty.");
       return null;
     }
 
     const route = data[0];
     
-    if (route.status && route.status.code !== 0) {
+    if (route.status?.code && route.status.code !== 0) {
       console.error("Route error:", route.status);
+      return null;
+    }
+
+    if (!route.duration || route.distanceMeters === undefined) {
+      console.error("Route error: Missing duration or distance data in response.", route);
       return null;
     }
 

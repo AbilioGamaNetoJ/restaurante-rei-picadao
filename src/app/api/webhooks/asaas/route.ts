@@ -25,7 +25,12 @@ export async function POST(req: Request) {
     // https://docs.asaas.com/docs/webhooks
     if (event === 'PAYMENT_RECEIVED' || event === 'PAYMENT_CONFIRMED') {
       newStatus = 'paid';
-    } else if (event === 'PAYMENT_DELETED' || event === 'PAYMENT_REFUNDED' || event === 'PAYMENT_REPROVED_BY_RISK_ANALYSIS') {
+    } else if (
+      event === 'PAYMENT_OVERDUE' ||
+      event === 'PAYMENT_DELETED' || 
+      event === 'PAYMENT_REFUNDED' || 
+      event === 'PAYMENT_REPROVED_BY_RISK_ANALYSIS'
+    ) {
       newStatus = 'cancelled';
     }
 

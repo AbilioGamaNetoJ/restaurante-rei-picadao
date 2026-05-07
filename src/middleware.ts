@@ -1,32 +1,42 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
-const isDashboardRoute = createRouteMatcher(['/dashboard(.*)', '/pedidos(.*)']);
-const isOwnerRoute = createRouteMatcher([
-  '/dashboard/dashboard(.*)',
-  '/dashboard/financeiro(.*)',
-  '/dashboard/configuracoes(.*)',
+const isDashboardRoute = createRouteMatcher([
+  '/dashboard(.*)',
+  '/pedidos(.*)',
+  '/produtos(.*)',
+  '/categorias(.*)',
+  '/funcionarios(.*)',
+  '/financeiro(.*)',
+  '/configuracoes(.*)',
 ]);
+
+const isOwnerOnlyRoute = createRouteMatcher([
+  '/dashboard(.*)',
+  '/financeiro(.*)',
+  '/configuracoes(.*)',
+]);
+
 const isManagerRoute = createRouteMatcher([
-  '/dashboard/produtos(.*)',
-  '/dashboard/categorias(.*)',
-  '/dashboard/funcionarios(.*)',
+  '/produtos(.*)',
+  '/categorias(.*)',
+  '/funcionarios(.*)',
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (isDashboardRoute(req)) {
     await auth.protect();
     
-    const sessionClaims = await auth();
-    const role = sessionClaims?.sessionClaims?.metadata?.role as string | undefined;
+    const { sessionClaims } = await auth();
+    const role = (sessionClaims?.metadata as any)?.role as string | undefined;
 
     // Bloqueio Global: Se não tiver role definida ou for apenas cliente, não entra no painel
     if (!role || role === 'cliente') {
       return NextResponse.redirect(new URL('/', req.url));
     }
 
-    // Se tentar acessar rota de dono e não for dono
-    if (isOwnerRoute(req) && role !== 'dono') {
+    // Se tentar acessar rota exclusiva de dono e não for dono
+    if (isOwnerOnlyRoute(req) && role !== 'dono') {
       return NextResponse.redirect(new URL('/pedidos', req.url));
     }
 
