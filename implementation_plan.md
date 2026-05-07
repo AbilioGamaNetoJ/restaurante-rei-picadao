@@ -172,7 +172,7 @@ src/
 ├── stores/
 │   └── cart-store.ts               # Zustand + localStorage persist
 ├── types/index.ts
-└── middleware.ts                    # Clerk + RBAC
+└── proxy.ts                         # Clerk + RBAC
 ```
 
 ---
@@ -253,9 +253,9 @@ Seed com:
 
 ### Fase 3 — Autenticação e RBAC (Clerk)
 
-#### [NEW] `src/middleware.ts`
+#### [NEW] `src/proxy.ts`
 
-Middleware Clerk com `createRouteMatcher`:
+Proxy (antigo Middleware) Clerk com `createRouteMatcher`:
 - `/dashboard/*` → exige auth
 - `/dashboard/dashboard`, `/dashboard/financeiro`, `/dashboard/configuracoes` → `role === 'dono'`
 - `/dashboard/produtos`, `/dashboard/categorias`, `/dashboard/funcionarios` → `role === 'dono'` ou `role === 'gerente'`

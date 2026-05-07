@@ -100,10 +100,12 @@ export default async function DashboardLayout({
       </div>
       <div className="mt-auto p-4 border-t">
         <SignOutButton>
-          <Button variant="outline" className="w-full flex items-center justify-start gap-2">
-            <LogOut className="h-4 w-4" />
-            Sair do sistema
-          </Button>
+          <div>
+            <Button variant="outline" className="w-full flex items-center justify-start gap-2">
+              <LogOut className="h-4 w-4" />
+              Sair do sistema
+            </Button>
+          </div>
         </SignOutButton>
       </div>
     </div>
@@ -117,7 +119,7 @@ export default async function DashboardLayout({
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet>
-            <SheetTrigger render={
+            <SheetTrigger>
               <Button
                 variant="outline"
                 size="icon"
@@ -126,7 +128,7 @@ export default async function DashboardLayout({
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Menu de navegação</span>
               </Button>
-            } />
+            </SheetTrigger>
             <SheetContent side="left" className="flex flex-col p-0 w-64">
               <SidebarContent />
             </SheetContent>
