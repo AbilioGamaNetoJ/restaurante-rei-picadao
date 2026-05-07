@@ -10,6 +10,7 @@ import { createProduct, updateProduct, deleteProduct } from './actions';
 import { Plus, Trash2, Edit2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import Image from 'next/image';
+import { UploadButton } from '@/lib/uploadthing';
 
 export function ProdutosClient({ initialProducts, categories, addons }: { initialProducts: any[], categories: any[], addons: any[] }) {
   const [isPending, startTransition] = useTransition();
@@ -103,11 +104,11 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
         <Input placeholder="Buscar produtos..." className="max-w-sm" />
         
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
+          <DialogTrigger render={
             <Button onClick={handleOpenNew}>
               <Plus className="mr-2 h-4 w-4" /> Novo Produto
             </Button>
-          </DialogTrigger>
+          } />
           <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
             <DialogHeader>
               <DialogTitle>{editingId ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
@@ -153,9 +154,55 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="imageUrl">URL da Imagem</Label>
-                <Input id="imageUrl" value={formData.imageUrl} onChange={(e) => setFormData({...formData, imageUrl: e.target.value})} placeholder="https://..." />
-                <p className="text-xs text-muted-foreground">Cole a URL da imagem. UploadThing será integrado posteriormente.</p>
+                <Label>Imagem do Produto</Label>
+                <div className="flex items-center gap-4 p-4 border-2 border-dashed rounded-md bg-slate-50 dark:bg-slate-900/50">
+                  {formData.imageUrl ? (
+                    <div className="relative h-24 w-24 rounded-md overflow-hidden border shadow-sm">
+                      <Image src={formData.imageUrl} alt="Preview" fill className="object-cover" />
+                      <button 
+                        type="button"
+                        onClick={() => setFormData({...formData, imageUrl: ''})}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="h-24 w-24 rounded-md bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                      <Plus className="h-8 w-8" />
+                    </div>
+                  )}
+                  
+                  <div className="flex-1 space-y-2">
+                    <UploadButton
+                      endpoint="productImage"
+                      onClientUploadComplete={(res) => {
+                        if (res?.[0]) {
+                          setFormData({ ...formData, imageUrl: res[0].url });
+                          toast.success("Imagem enviada com sucesso!");
+                        }
+                      }}
+                      onUploadError={(error: Error) => {
+                        toast.error(`Erro no upload: ${error.message}`);
+                      }}
+                      appearance={{
+                        button: "bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 rounded-md text-sm font-medium transition-colors ut-uploading:cursor-not-allowed",
+                        allowedContent: "text-xs text-muted-foreground",
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">Formatos aceitos: JPG, PNG, WEBP (Max 4MB)</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="imageUrl" className="text-xs">Ou cole uma URL externa</Label>
+                  <Input 
+                    id="imageUrl" 
+                    value={formData.imageUrl} 
+                    onChange={(e) => setFormData({...formData, imageUrl: e.target.value})} 
+                    placeholder="https://..." 
+                  />
+                </div>
               </div>
 
               <div className="space-y-2 border rounded-md p-4 bg-slate-50 dark:bg-slate-900/50">

@@ -75,11 +75,11 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
         <Input placeholder="Buscar categorias..." className="max-w-sm" />
         
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
+          <DialogTrigger render={
             <Button onClick={handleOpenNew}>
               <Plus className="mr-2 h-4 w-4" /> Nova Categoria
             </Button>
-          </DialogTrigger>
+          } />
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingId ? 'Editar Categoria' : 'Nova Categoria'}</DialogTitle>

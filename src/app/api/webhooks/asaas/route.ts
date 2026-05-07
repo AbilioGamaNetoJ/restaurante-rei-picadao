@@ -8,6 +8,12 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { event, payment } = body;
 
+    // Security: Validate Asaas token
+    const asaasToken = req.headers.get('asaas-access-token');
+    if (process.env.ASAAS_WEBHOOK_TOKEN && asaasToken !== process.env.ASAAS_WEBHOOK_TOKEN) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     if (!payment || !payment.externalReference) {
       return NextResponse.json({ received: true }, { status: 200 });
     }

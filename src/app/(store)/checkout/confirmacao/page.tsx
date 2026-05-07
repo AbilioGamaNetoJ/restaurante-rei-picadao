@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useCartStore } from '@/stores/cart-store';
 import { Button } from '@/components/ui/button';
 import { CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
-export default function ConfirmacaoPage() {
+function ConfirmacaoContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
   const router = useRouter();
@@ -56,5 +56,17 @@ export default function ConfirmacaoPage() {
         <Button size="lg">Voltar ao Cardápio</Button>
       </Link>
     </div>
+  );
+}
+
+export default function ConfirmacaoPage() {
+  return (
+    <Suspense fallback={
+      <div className="container max-w-2xl mx-auto py-20 px-4 text-center">
+        <p>Carregando confirmação...</p>
+      </div>
+    }>
+      <ConfirmacaoContent />
+    </Suspense>
   );
 }

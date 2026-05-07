@@ -76,11 +76,11 @@ export function FinanceiroClient({ initialExpenses }: { initialExpenses: any[] }
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Registro de Despesas</h2>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
+          <DialogTrigger render={
             <Button onClick={handleOpenNew}>
               <Plus className="mr-2 h-4 w-4" /> Nova Despesa
             </Button>
-          </DialogTrigger>
+          } />
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Nova Despesa</DialogTitle>

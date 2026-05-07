@@ -23,7 +23,7 @@ export function CartDrawer() {
 
   return (
     <Sheet>
-      <SheetTrigger asChild>
+      <SheetTrigger render={
         <Button variant="outline" size="icon" className="relative">
           <ShoppingCart className="h-5 w-5" />
           {totalItems > 0 && (
@@ -32,7 +32,7 @@ export function CartDrawer() {
             </span>
           )}
         </Button>
-      </SheetTrigger>
+      } />
       <SheetContent className="w-full sm:max-w-md flex flex-col h-full">
         <SheetHeader>
           <SheetTitle>Seu Carrinho</SheetTitle>
@@ -129,10 +129,8 @@ export function CartDrawer() {
               </span>
             </div>
             <SheetFooter>
-              <Button asChild className="w-full" size="lg">
-                <Link href="/checkout/endereco">
-                  Avançar para o Checkout
-                </Link>
+              <Button render={<Link href="/checkout/endereco" />} className="w-full" size="lg">
+                Avançar para o Checkout
               </Button>
             </SheetFooter>
           </div>

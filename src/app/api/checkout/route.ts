@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { orders, orderItems, orderItemAddons } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import { createAsaasCustomer, createCheckout } from '@/lib/asaas';
 
 export async function POST(req: Request) {
@@ -93,7 +94,7 @@ export async function POST(req: Request) {
     // 4. Update Order with Checkout URL
     await db.update(orders)
       .set({ asaasCheckoutUrl: checkoutUrl })
-      .where({ id: newOrder.id });
+      .where(eq(orders.id, newOrder.id));
 
     return NextResponse.json({ checkoutUrl });
 

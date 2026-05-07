@@ -13,25 +13,25 @@ async function main() {
 
   // 1. Categories
   const categoriesData = [
-    { name: 'Destaques', slug: 'destaques', type: 'produto', sortOrder: 1 },
-    { name: 'Ofertas do Rei', slug: 'ofertas-do-rei', type: 'produto', sortOrder: 2 },
-    { name: 'Frango Frito Normal', slug: 'frango-frito-normal', type: 'produto', sortOrder: 3 },
-    { name: 'Frango Frito Especial', slug: 'frango-frito-especial', type: 'produto', sortOrder: 4 },
-    { name: 'Frango Frito Super Especial', slug: 'frango-frito-super-especial', type: 'produto', sortOrder: 5 },
-    { name: 'Picanha do Rei Normal', slug: 'picanha-do-rei-normal', type: 'produto', sortOrder: 6 },
-    { name: 'Picanha do Rei Especial', slug: 'picanha-do-rei-especial', type: 'produto', sortOrder: 7 },
-    { name: 'Camarão do Rei Normal', slug: 'camarao-do-rei-normal', type: 'produto', sortOrder: 8 },
-    { name: 'Camarão do Rei Especial', slug: 'camarao-do-rei-especial', type: 'produto', sortOrder: 9 },
-    { name: 'Camarão do Rei Super Especial', slug: 'camarao-do-rei-super-especial', type: 'produto', sortOrder: 10 },
-    { name: 'Isca de Peixe do Rei', slug: 'isca-de-peixe-do-rei', type: 'produto', sortOrder: 11 },
-    { name: 'Camarão com Isca de Peixe do Rei', slug: 'camarao-com-isca-de-peixe-do-rei', type: 'produto', sortOrder: 12 },
-    { name: 'Picados', slug: 'picados', type: 'produto', sortOrder: 13 },
-    { name: 'Mega Do Rei', slug: 'mega-do-rei', type: 'produto', sortOrder: 14 },
-    { name: 'Porções Individuais', slug: 'porcoes-individuais', type: 'produto', sortOrder: 15 },
-    { name: 'Porções', slug: 'porcoes', type: 'produto', sortOrder: 16 },
-    { name: 'Bebidas', slug: 'bebidas', type: 'adicional', sortOrder: 17 },
-    { name: 'Molhos', slug: 'molhos', type: 'adicional', sortOrder: 18 },
-  ] as const;
+    { name: 'Destaques', slug: 'destaques', type: 'produto' as const, sortOrder: 1 },
+    { name: 'Ofertas do Rei', slug: 'ofertas-do-rei', type: 'produto' as const, sortOrder: 2 },
+    { name: 'Frango Frito Normal', slug: 'frango-frito-normal', type: 'produto' as const, sortOrder: 3 },
+    { name: 'Frango Frito Especial', slug: 'frango-frito-especial', type: 'produto' as const, sortOrder: 4 },
+    { name: 'Frango Frito Super Especial', slug: 'frango-frito-super-especial', type: 'produto' as const, sortOrder: 5 },
+    { name: 'Picanha do Rei Normal', slug: 'picanha-do-rei-normal', type: 'produto' as const, sortOrder: 6 },
+    { name: 'Picanha do Rei Especial', slug: 'picanha-do-rei-especial', type: 'produto' as const, sortOrder: 7 },
+    { name: 'Camarão do Rei Normal', slug: 'camarao-do-rei-normal', type: 'produto' as const, sortOrder: 8 },
+    { name: 'Camarão do Rei Especial', slug: 'camarao-do-rei-especial', type: 'produto' as const, sortOrder: 9 },
+    { name: 'Camarão do Rei Super Especial', slug: 'camarao-do-rei-super-especial', type: 'produto' as const, sortOrder: 10 },
+    { name: 'Isca de Peixe do Rei', slug: 'isca-de-peixe-do-rei', type: 'produto' as const, sortOrder: 11 },
+    { name: 'Camarão com Isca de Peixe do Rei', slug: 'camarao-com-isca-de-peixe-do-rei', type: 'produto' as const, sortOrder: 12 },
+    { name: 'Picados', slug: 'picados', type: 'produto' as const, sortOrder: 13 },
+    { name: 'Mega Do Rei', slug: 'mega-do-rei', type: 'produto' as const, sortOrder: 14 },
+    { name: 'Porções Individuais', slug: 'porcoes-individuais', type: 'produto' as const, sortOrder: 15 },
+    { name: 'Porções', slug: 'porcoes', type: 'produto' as const, sortOrder: 16 },
+    { name: 'Bebidas', slug: 'bebidas', type: 'adicional' as const, sortOrder: 17 },
+    { name: 'Molhos', slug: 'molhos', type: 'adicional' as const, sortOrder: 18 },
+  ];
 
   await db.insert(categories).values(categoriesData).onConflictDoNothing({ target: categories.slug });
   console.log('Categories seeded.');
