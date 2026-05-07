@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
-import { products, productAddons } from '@/db/schema';
+import { products, productAddons, productCategories } from '@/db/schema';
 import { eq, and, asc } from 'drizzle-orm';
 
 export async function GET(req: Request) {
@@ -11,13 +11,16 @@ export async function GET(req: Request) {
     const isAvailable = searchParams.get('isAvailable');
 
     const filters = [];
-    if (categoryId) filters.push(eq(products.categoryId, categoryId));
     if (isAvailable === 'true') filters.push(eq(products.isAvailable, true));
 
     const allProducts = await db.query.products.findMany({
       where: filters.length > 0 ? and(...filters) : undefined,
       with: {
-        category: true,
+        categories: {
+          with: {
+            category: true
+          }
+        },
         addons: {
           with: {
             addon: true
@@ -27,7 +30,13 @@ export async function GET(req: Request) {
       orderBy: [asc(products.sortOrder)],
     });
 
-    return NextResponse.json(allProducts);
+    // Se categoryId estiver presente, filtramos no código ou via join mais complexo
+    // Para simplificar e manter performance razoável com poucos dados, filtramos aqui:
+    const filteredProducts = categoryId 
+      ? allProducts.filter(p => p.categories.some(c => c.categoryId === categoryId))
+      : allProducts;
+
+    return NextResponse.json(filteredProducts);
   } catch (error) {
     console.error('Error fetching products:', error);
     return NextResponse.json(
@@ -52,7 +61,7 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { 
-      categoryId, 
+      categoryIds, // Array de IDs de categorias
       name, 
       description, 
       price, 
@@ -60,16 +69,16 @@ export async function POST(req: Request) {
       imageUrl, 
       isAvailable, 
       sortOrder,
-      addonsIds // Array of addon IDs
+      addonsIds 
     } = body;
 
-    if (!categoryId || !name || !price) {
+    if (!categoryIds || !Array.isArray(categoryIds) || categoryIds.length === 0 || !name || !price) {
       return NextResponse.json({ error: 'Dados obrigatórios ausentes.' }, { status: 400 });
     }
 
     const newProduct = await db.transaction(async (tx) => {
       const [product] = await tx.insert(products).values({
-        categoryId,
+        categoryId: categoryIds[0], // Para compatibilidade
         name,
         description,
         price,
@@ -78,6 +87,14 @@ export async function POST(req: Request) {
         isAvailable: isAvailable !== undefined ? isAvailable : true,
         sortOrder: sortOrder || 0,
       }).returning();
+
+      // Insere categorias
+      await tx.insert(productCategories).values(
+        categoryIds.map((categoryId: string) => ({
+          productId: product.id,
+          categoryId,
+        }))
+      );
 
       if (addonsIds && Array.isArray(addonsIds) && addonsIds.length > 0) {
         await tx.insert(productAddons).values(

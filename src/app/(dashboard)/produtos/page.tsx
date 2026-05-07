@@ -6,9 +6,13 @@ import { ProdutosClient } from './produtos-client';
 export default async function ProdutosPage() {
   const [allProducts, allCategories, allAddons] = await Promise.all([
     db.query.products.findMany({
-      orderBy: [asc(products.categoryId), asc(products.sortOrder)],
+      orderBy: [asc(products.sortOrder)],
       with: {
-        category: true,
+        categories: {
+          with: {
+            category: true
+          }
+        },
         addons: {
           with: {
             addon: true

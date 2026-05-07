@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+import { can, PermissionAction } from './lib/permissions';
 
 const isDashboardRoute = createRouteMatcher([
   '/dashboard(.*)',
@@ -11,17 +12,16 @@ const isDashboardRoute = createRouteMatcher([
   '/configuracoes(.*)',
 ]);
 
-const isOwnerOnlyRoute = createRouteMatcher([
-  '/dashboard(.*)',
-  '/financeiro(.*)',
-  '/configuracoes(.*)',
-]);
-
-const isManagerRoute = createRouteMatcher([
-  '/produtos(.*)',
-  '/categorias(.*)',
-  '/funcionarios(.*)',
-]);
+// Map routes to required permissions
+const ROUTE_PERMISSIONS: Record<string, PermissionAction> = {
+  '/dashboard': 'view_metrics',
+  '/financeiro': 'view_finance',
+  '/configuracoes': 'edit_settings',
+  '/produtos': 'manage_products',
+  '/categorias': 'manage_categories',
+  '/funcionarios': 'manage_staff',
+  '/pedidos': 'view_orders',
+};
 
 export const proxy = clerkMiddleware(async (auth, req) => {
   if (isDashboardRoute(req)) {
@@ -30,22 +30,24 @@ export const proxy = clerkMiddleware(async (auth, req) => {
     const { sessionClaims } = await auth();
     const role = (sessionClaims?.metadata as any)?.role as string | undefined;
 
-    // Bloqueio Global: Se não tiver role definida ou for apenas cliente, não entra no painel
-    if (!role || role === 'cliente') {
+    // Bloqueio Global: Se não tiver role definida ou não puder acessar dashboard
+    if (!role || !can(role, 'access_dashboard')) {
       return NextResponse.redirect(new URL('/', req.url));
     }
 
-    // Se tentar acessar rota exclusiva de dono e não for dono
-    if (isOwnerOnlyRoute(req) && role !== 'dono') {
-      return NextResponse.redirect(new URL('/pedidos', req.url));
-    }
+    // Verificar permissão específica para a rota
+    const pathname = req.nextUrl.pathname;
+    const requiredPermission = Object.entries(ROUTE_PERMISSIONS).find(([route]) => 
+      pathname.startsWith(route)
+    )?.[1];
 
-    // Se tentar acessar rota de gerente e for apenas funcionário
-    if (isManagerRoute(req) && role !== 'dono' && role !== 'gerente') {
+    if (requiredPermission && !can(role, requiredPermission)) {
+      // Redireciona para pedidos se não tiver permissão para a rota específica
       return NextResponse.redirect(new URL('/pedidos', req.url));
     }
   }
 });
+
 
 export const config = {
   matcher: [

@@ -15,6 +15,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { SignOutButton } from '@clerk/nextjs';
+import { can, PermissionAction } from '@/lib/permissions';
+import { db } from '@/db';
+import { users } from '@/db/schema';
 
 export default async function DashboardLayout({
   children,
@@ -22,59 +25,85 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { userId, sessionClaims } = await auth();
+  const user = await currentUser();
   const role = (sessionClaims?.metadata as any)?.role || 'cliente';
 
   // Se for apenas um cliente logado tentando acessar o painel, redireciona para a home
-  if (!userId || role === 'cliente') {
+  if (!userId || !can(role, 'access_dashboard')) {
     redirect('/');
   }
 
-  const menuItems = [
+  // Sincronizar usuário com o Banco de Dados
+  if (user) {
+    await db.insert(users).values({
+      clerkId: user.id,
+      email: user.emailAddresses[0].emailAddress,
+      name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+      role: role,
+    }).onConflictDoUpdate({
+      target: users.clerkId,
+      set: { 
+        email: user.emailAddresses[0].emailAddress,
+        name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        role: role,
+        updatedAt: new Date()
+      }
+    });
+  }
+
+  interface MenuItem {
+    title: string;
+    href: string;
+    icon: any;
+    permission: PermissionAction;
+  }
+
+  const menuItems: MenuItem[] = [
     {
       title: 'Métricas',
       href: '/dashboard',
       icon: LayoutDashboard,
-      roles: ['dono'],
+      permission: 'view_metrics',
     },
     {
       title: 'Fila de Pedidos',
       href: '/pedidos',
       icon: ShoppingBag,
-      roles: ['dono', 'gerente', 'funcionario'],
+      permission: 'view_orders',
     },
     {
       title: 'Produtos',
       href: '/produtos',
       icon: Package,
-      roles: ['dono', 'gerente'],
+      permission: 'manage_products',
     },
     {
       title: 'Categorias',
       href: '/categorias',
       icon: Tags,
-      roles: ['dono', 'gerente'],
+      permission: 'manage_categories',
     },
     {
       title: 'Equipe',
       href: '/funcionarios',
       icon: Users,
-      roles: ['dono', 'gerente'],
+      permission: 'manage_staff', 
     },
     {
       title: 'Financeiro',
       href: '/financeiro',
       icon: DollarSign,
-      roles: ['dono'],
+      permission: 'view_finance',
     },
     {
       title: 'Configurações',
       href: '/configuracoes',
       icon: Settings,
-      roles: ['dono'],
+      permission: 'edit_settings',
     },
   ];
 
-  const allowedItems = menuItems.filter(item => item.roles.includes(role));
+  const allowedItems = menuItems.filter(item => can(role, item.permission));
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col">

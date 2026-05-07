@@ -27,6 +27,7 @@ export default async function StorePage() {
     where: eq(products.isAvailable, true),
     orderBy: [asc(products.sortOrder)],
     with: {
+      categories: true,
       addons: {
         with: {
           addon: true

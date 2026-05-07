@@ -2,13 +2,13 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
-import { products, productAddons } from '@/db/schema';
+import { products, productAddons, productCategories } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 export async function createProduct(data: { 
   name: string; 
-  categoryId: string; 
+  categoryIds: string[]; 
   description: string; 
   price: string; 
   costPrice: string; 
@@ -26,13 +26,23 @@ export async function createProduct(data: {
   // Insere o produto
   const newProduct = await db.insert(products).values({
     name: data.name,
-    categoryId: data.categoryId,
+    categoryId: data.categoryIds[0] || '', // Mantém o primeiro para compatibilidade temporária
     description: data.description,
     price: data.price,
     costPrice: data.costPrice,
     imageUrl: data.imageUrl,
     sortOrder: data.sortOrder,
   }).returning();
+
+  // Insere as categorias vinculadas
+  if (data.categoryIds.length > 0) {
+    await db.insert(productCategories).values(
+      data.categoryIds.map(categoryId => ({
+        productId: newProduct[0].id,
+        categoryId,
+      }))
+    );
+  }
 
   // Insere os adicionais vinculados
   if (data.addonsIds.length > 0) {
@@ -50,7 +60,7 @@ export async function createProduct(data: {
 
 export async function updateProduct(id: string, data: { 
   name: string; 
-  categoryId: string; 
+  categoryIds: string[]; 
   description: string; 
   price: string; 
   costPrice: string; 
@@ -71,7 +81,7 @@ export async function updateProduct(id: string, data: {
     .update(products)
     .set({
       name: data.name,
-      categoryId: data.categoryId,
+      categoryId: data.categoryIds[0] || '', // Mantém o primeiro para compatibilidade temporária
       description: data.description,
       price: data.price,
       costPrice: data.costPrice,
@@ -81,6 +91,17 @@ export async function updateProduct(id: string, data: {
       updatedAt: new Date(),
     })
     .where(eq(products.id, id));
+
+  // Atualiza categorias: apaga todas e recria
+  await db.delete(productCategories).where(eq(productCategories.productId, id));
+  if (data.categoryIds.length > 0) {
+    await db.insert(productCategories).values(
+      data.categoryIds.map(categoryId => ({
+        productId: id,
+        categoryId,
+      }))
+    );
+  }
 
   // Atualiza adicionais: apaga todos e recria
   await db.delete(productAddons).where(eq(productAddons.productId, id));

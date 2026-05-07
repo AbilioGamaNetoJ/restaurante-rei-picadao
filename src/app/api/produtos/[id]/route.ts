@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
-import { products, productAddons } from '@/db/schema';
+import { products, productAddons, productCategories } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(
@@ -14,7 +14,11 @@ export async function GET(
     const product = await db.query.products.findFirst({
       where: eq(products.id, id),
       with: {
-        category: true,
+        categories: {
+          with: {
+            category: true
+          }
+        },
         addons: {
           with: {
             addon: true
@@ -56,7 +60,7 @@ export async function PUT(
 
     const body = await req.json();
     const { 
-      categoryId, 
+      categoryIds, // Array de IDs de categorias
       name, 
       description, 
       price, 
@@ -70,7 +74,7 @@ export async function PUT(
     const updatedProduct = await db.transaction(async (tx) => {
       const [product] = await tx.update(products)
         .set({
-          categoryId,
+          categoryId: categoryIds?.[0] || null, // Para compatibilidade
           name,
           description,
           price,
@@ -86,6 +90,20 @@ export async function PUT(
       if (!product) {
         tx.rollback();
         return null;
+      }
+
+      // Update categories: remove old ones and insert new ones
+      if (categoryIds && Array.isArray(categoryIds)) {
+        await tx.delete(productCategories).where(eq(productCategories.productId, id));
+        
+        if (categoryIds.length > 0) {
+          await tx.insert(productCategories).values(
+            categoryIds.map((categoryId: string) => ({
+              productId: id,
+              categoryId,
+            }))
+          );
+        }
       }
 
       // Update addons: remove old ones and insert new ones

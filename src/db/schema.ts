@@ -38,7 +38,7 @@ export const categories = pgTable('categories', {
 });
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
-  products: many(products),
+  products: many(productCategories),
 }));
 
 // Products
@@ -58,11 +58,8 @@ export const products = pgTable('products', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export const productsRelations = relations(products, ({ one, many }) => ({
-  category: one(categories, {
-    fields: [products.categoryId],
-    references: [categories.id],
-  }),
+export const productsRelations = relations(products, ({ many }) => ({
+  categories: many(productCategories),
   addons: many(productAddons),
 }));
 
@@ -99,6 +96,29 @@ export const productAddonsRelations = relations(productAddons, ({ one }) => ({
   addon: one(addons, {
     fields: [productAddons.addonId],
     references: [addons.id],
+  }),
+}));
+
+// Product Categories (Many-to-Many)
+export const productCategories = pgTable('product_categories', {
+  productId: uuid('product_id')
+    .notNull()
+    .references(() => products.id, { onDelete: 'cascade' }),
+  categoryId: uuid('category_id')
+    .notNull()
+    .references(() => categories.id, { onDelete: 'cascade' }),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.productId, t.categoryId] }),
+}));
+
+export const productCategoriesRelations = relations(productCategories, ({ one }) => ({
+  product: one(products, {
+    fields: [productCategories.productId],
+    references: [products.id],
+  }),
+  category: one(categories, {
+    fields: [productCategories.categoryId],
+    references: [categories.id],
   }),
 }));
 
@@ -234,3 +254,19 @@ export const expenses = pgTable('expenses', {
   createdBy: text('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
+
+// Users (Mirror from Clerk)
+export const users = pgTable('users', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  clerkId: text('clerk_id').notNull().unique(),
+  name: text('name'),
+  email: text('email').notNull(),
+  role: text('role').notNull().default('cliente'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const usersRelations = relations(users, ({ many }) => ({
+  expenses: many(expenses),
+}));
+

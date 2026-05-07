@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { createProduct, updateProduct, deleteProduct } from './actions';
-import { Plus, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Edit2, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { UploadButton } from '@/lib/uploadthing';
@@ -19,7 +20,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
   
   const [formData, setFormData] = useState({
     name: '',
-    categoryId: categories[0]?.id || '',
+    categoryIds: [] as string[],
     description: '',
     price: '',
     costPrice: '',
@@ -32,7 +33,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
   const handleOpenNew = () => {
     setEditingId(null);
     setFormData({ 
-      name: '', categoryId: categories[0]?.id || '', description: '', 
+      name: '', categoryIds: [], description: '', 
       price: '', costPrice: '', imageUrl: '', isAvailable: true, sortOrder: 0, addonsIds: [] 
     });
     setIsOpen(true);
@@ -42,7 +43,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
     setEditingId(product.id);
     setFormData({
       name: product.name,
-      categoryId: product.categoryId,
+      categoryIds: product.categories.map((c: any) => c.categoryId),
       description: product.description || '',
       price: product.price,
       costPrice: product.costPrice || '',
@@ -56,8 +57,8 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.categoryId) {
-      toast.error('Selecione uma categoria');
+    if (formData.categoryIds.length === 0) {
+      toast.error('Selecione pelo menos uma categoria');
       return;
     }
 
@@ -119,16 +120,46 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                   <Label htmlFor="name">Nome</Label>
                   <Input id="name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="categoryId">Categoria</Label>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="categoryIds">Categorias</Label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {formData.categoryIds.map(catId => {
+                      const cat = categories.find(c => c.id === catId);
+                      return (
+                        <Badge key={catId} variant="secondary" className="flex items-center gap-1 py-1 px-2">
+                          {cat?.name}
+                          <button 
+                            type="button" 
+                            onClick={() => setFormData({
+                              ...formData, 
+                              categoryIds: formData.categoryIds.filter(id => id !== catId)
+                            })}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
                   <select 
-                    id="categoryId"
+                    id="categoryIds"
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                    value={formData.categoryId}
-                    onChange={(e) => setFormData({...formData, categoryId: e.target.value})}
-                    required
+                    value=""
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val && !formData.categoryIds.includes(val)) {
+                        setFormData({
+                          ...formData,
+                          categoryIds: [...formData.categoryIds, val]
+                        });
+                      }
+                    }}
                   >
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    <option value="" disabled>Adicionar categoria...</option>
+                    {categories
+                      .filter(c => !formData.categoryIds.includes(c.id))
+                      .map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
               </div>
@@ -264,7 +295,13 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                     <div className="text-sm font-bold">R$ {Number(product.price).toFixed(2)}</div>
                   </div>
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-xs bg-slate-100 px-2 py-1 rounded">{product.category.name}</span>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {product.categories.map((pc: any) => (
+                      <span key={pc.categoryId} className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
+                        {pc.category.name}
+                      </span>
+                    ))}
+                  </div>
                     <div className="flex gap-2">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEdit(product)}>
                         <Edit2 className="h-4 w-4" />

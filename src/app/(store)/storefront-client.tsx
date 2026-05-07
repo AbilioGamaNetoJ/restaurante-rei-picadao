@@ -45,7 +45,7 @@ export function StorefrontClient({ categories, products, hours }: StorefrontClie
   };
 
   const filteredProducts = selectedCategory 
-    ? products.filter(p => p.categoryId === selectedCategory)
+    ? products.filter(p => p.categories.some((c: any) => c.categoryId === selectedCategory))
     : products;
 
   return (
