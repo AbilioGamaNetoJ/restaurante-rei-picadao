@@ -14,7 +14,7 @@ import { relations } from 'drizzle-orm';
 
 // Enums
 export const categoryTypeEnum = pgEnum('category_type', ['produto', 'adicional']);
-export const addonCategoryEnum = pgEnum('addon_category', ['bebida', 'molho']);
+
 export const orderStatusEnum = pgEnum('order_status', [
   'pending',
   'paid',
@@ -67,13 +67,19 @@ export const productsRelations = relations(products, ({ many }) => ({
 export const addons = pgTable('addons', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
+  description: text('description'),
   price: numeric('price', { precision: 10, scale: 2 }).notNull(),
-  category: addonCategoryEnum('category').notNull(),
+  categoryId: uuid('category_id')
+    .references(() => categories.id, { onDelete: 'set null' }),
   imageUrl: text('image_url'),
   isAvailable: boolean('is_available').notNull().default(true),
 });
 
-export const addonsRelations = relations(addons, ({ many }) => ({
+export const addonsRelations = relations(addons, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [addons.categoryId],
+    references: [categories.id],
+  }),
   products: many(productAddons),
 }));
 

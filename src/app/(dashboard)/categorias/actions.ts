@@ -26,6 +26,7 @@ export async function createCategory(data: { name: string; type: 'produto' | 'ad
   });
 
   revalidatePath('/categorias');
+  revalidatePath('/produtos');
 }
 
 export async function updateCategory(id: string, data: { name: string; type: 'produto' | 'adicional'; sortOrder: number; isActive: boolean }) {

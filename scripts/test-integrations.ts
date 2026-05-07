@@ -38,8 +38,7 @@ async function testIntegrations() {
         subtotal: '90.00',
         deliveryFee: '10.00',
         total: '100.00',
-        status: 'pending',
-        items: []
+        status: 'pending'
       });
       console.log('✅ Pedido de teste criado.');
     }

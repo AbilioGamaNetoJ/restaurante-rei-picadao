@@ -236,22 +236,50 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                 </div>
               </div>
 
-              <div className="space-y-2 border rounded-md p-4 bg-slate-50 dark:bg-slate-900/50">
-                <Label>Adicionais Permitidos</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  {addons.map(addon => (
-                    <div key={addon.id} className="flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
-                        id={`addon-${addon.id}`}
-                        checked={formData.addonsIds.includes(addon.id)}
-                        onChange={() => toggleAddon(addon.id)}
-                      />
-                      <Label htmlFor={`addon-${addon.id}`} className="font-normal cursor-pointer">
-                        {addon.name} (+R$ {Number(addon.price).toFixed(2)})
-                      </Label>
-                    </div>
-                  ))}
+              <div className="space-y-4 border rounded-md p-4 bg-slate-50 dark:bg-slate-900/50">
+                <Label className="text-base font-semibold">Adicionais Permitidos</Label>
+                
+                <div className="space-y-4">
+                  {/* Agrupamento dinâmico por categoria */}
+                  {Array.from(new Set(addons.map(a => a.categoryId))).map((catId) => {
+                    const filteredAddons = addons.filter(a => a.categoryId === catId);
+                    if (filteredAddons.length === 0) return null;
+                    const categoryName = filteredAddons[0].category?.name || 'Geral';
+                    
+                    return (
+                      <div key={catId || 'geral'} className="space-y-2">
+                        <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">
+                          {categoryName}
+                        </h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {filteredAddons.map(addon => (
+                            <div key={addon.id} className="flex items-center gap-2">
+                              <input 
+                                type="checkbox" 
+                                id={`addon-${addon.id}`}
+                                checked={formData.addonsIds.includes(addon.id)}
+                                onChange={() => toggleAddon(addon.id)}
+                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                              />
+                              <Label htmlFor={`addon-${addon.id}`} className="font-normal cursor-pointer text-sm">
+                                <div>
+                                  {addon.name} (+R$ {Number(addon.price).toFixed(2)})
+                                  {addon.description && (
+                                    <span className="block text-[10px] text-muted-foreground leading-tight">
+                                      {addon.description}
+                                    </span>
+                                  )}
+                                </div>
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {addons.length === 0 && (
+                    <p className="text-xs text-muted-foreground italic">Nenhum adicional cadastrado. Vá na aba "Adicionais" para criar.</p>
+                  )}
                 </div>
               </div>
 
