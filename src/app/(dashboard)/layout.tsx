@@ -119,16 +119,16 @@ export default async function DashboardLayout({
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet>
-            <SheetTrigger>
-              <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0 md:hidden"
-              >
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Menu de navegação</span>
-              </Button>
-            </SheetTrigger>
+            <SheetTrigger render={
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 md:hidden"
+            >
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Menu de navegação</span>
+            </Button>
+          } />
             <SheetContent side="left" className="flex flex-col p-0 w-64">
               <SidebarContent />
             </SheetContent>

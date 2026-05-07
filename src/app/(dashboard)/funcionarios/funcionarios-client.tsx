@@ -33,7 +33,7 @@ export function FuncionariosClient({ users, currentRole }: { users: any[], curre
                   <div className="flex items-center gap-4">
                     <div className="h-10 w-10 relative rounded-full overflow-hidden bg-slate-100">
                       {user.imageUrl ? (
-                        <Image src={user.imageUrl} alt={user.firstName || ''} fill className="object-cover" />
+                        <Image src={user.imageUrl} alt={user.firstName || ''} fill className="object-cover" sizes="40px" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">Sem foto</div>
                       )}
