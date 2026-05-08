@@ -106,10 +106,15 @@ export default async function DashboardLayout({
 
   const allowedItems = menuItems.filter(item => can(role, item.permission));
 
+  // Buscar configurações da loja para o logo
+  const settings = await db.query.storeSettings.findFirst();
+  const logoUrl = settings?.logoUrl;
+  const storeName = settings?.name || "Rei do Picadão";
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
-        <SidebarContent allowedItems={allowedItems} />
+        <SidebarContent allowedItems={allowedItems} logoUrl={logoUrl} storeName={storeName} />
       </div>
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
@@ -123,7 +128,7 @@ export default async function DashboardLayout({
               </button>
             } />
             <SheetContent side="left" className="flex flex-col p-0 w-64">
-              <SidebarContent allowedItems={allowedItems} />
+              <SidebarContent allowedItems={allowedItems} logoUrl={logoUrl} storeName={storeName} />
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
@@ -138,13 +143,23 @@ export default async function DashboardLayout({
   );
 }
 
-function SidebarContent({ allowedItems }: { allowedItems: any[] }) {
+function SidebarContent({ allowedItems, logoUrl, storeName }: { allowedItems: any[], logoUrl?: string | null, storeName: string }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Package className="h-6 w-6" />
-          <span className="">Rei do Picadão</span>
+        <Link href="/" className="flex items-center gap-3 font-bold group">
+          {logoUrl ? (
+            <img 
+              src={logoUrl} 
+              alt={storeName} 
+              className="h-8 w-8 object-cover rounded-full border bg-white shadow-sm transition-transform group-hover:scale-110" 
+            />
+          ) : (
+            <div className="bg-red-600 text-white p-1.5 rounded-full shadow-lg shadow-red-200 transition-transform group-hover:rotate-6">
+              <Package className="h-4 w-4" />
+            </div>
+          )}
+          <span className="truncate tracking-tighter">{storeName}</span>
         </Link>
       </div>
       <div className="flex-1 overflow-auto py-2">

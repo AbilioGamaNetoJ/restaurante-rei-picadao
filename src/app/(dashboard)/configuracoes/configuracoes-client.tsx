@@ -178,7 +178,7 @@ export function ConfiguracoesClient({
                       <img 
                         src={settings.logoUrl} 
                         alt="Logo" 
-                        className="w-full h-full object-contain rounded-md bg-white border shadow-sm" 
+                        className="w-full h-full object-cover rounded-full bg-white border shadow-sm" 
                       />
                       <button 
                         onClick={() => setSettings({...settings, logoUrl: ''})}
@@ -188,7 +188,7 @@ export function ConfiguracoesClient({
                       </button>
                     </div>
                   ) : (
-                    <div className="w-32 h-32 flex items-center justify-center border-2 border-dashed rounded-md text-muted-foreground bg-white">
+                    <div className="w-32 h-32 flex items-center justify-center border-2 border-dashed rounded-full text-muted-foreground bg-white">
                       Sem Logo
                     </div>
                   )}
@@ -350,7 +350,7 @@ export function ConfiguracoesClient({
             {/* Mock Header */}
             <header className="h-14 border-b bg-white/70 backdrop-blur-md px-6 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="bg-red-600 p-1.5 rounded-lg">
+                <div className="bg-red-600 p-1.5 rounded-full">
                   <StoreIcon className="h-3 w-3 text-white" />
                 </div>
                 <span className="font-black text-sm tracking-tighter">{settings.name || "Sua Loja"}</span>
@@ -375,9 +375,9 @@ export function ConfiguracoesClient({
               <div className="px-6 md:px-10 -mt-12 relative z-10">
                 <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-lg border border-white/50 flex flex-col md:flex-row items-center md:items-start gap-4">
                   {/* Logo */}
-                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border-4 border-white bg-white shadow-md overflow-hidden flex-shrink-0 -mt-14">
+                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-white bg-white shadow-md overflow-hidden flex-shrink-0 -mt-14">
                     {settings.logoUrl ? (
-                      <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
+                      <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-red-600 flex items-center justify-center text-white text-2xl font-black">
                         {settings.name?.[0] || "L"}

@@ -19,10 +19,10 @@ export default async function StoreLayout({ children }: { children: ReactNode })
               <img 
                 src={logoUrl} 
                 alt={storeName} 
-                className="h-10 w-10 object-contain rounded-xl border bg-white p-1 group-hover:scale-105 transition-all duration-300 shadow-sm" 
+                className="h-10 w-10 object-cover rounded-full border bg-white group-hover:scale-105 transition-all duration-300 shadow-sm" 
               />
             ) : (
-              <div className="bg-red-600 text-white p-2 rounded-xl group-hover:rotate-6 transition-all duration-300 shadow-lg shadow-red-200">
+              <div className="bg-red-600 text-white p-2 rounded-full group-hover:rotate-6 transition-all duration-300 shadow-lg shadow-red-200">
                 <StoreIcon className="h-5 w-5" />
               </div>
             )}
