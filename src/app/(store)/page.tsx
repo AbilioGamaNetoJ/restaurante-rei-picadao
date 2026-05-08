@@ -38,12 +38,14 @@ export default async function StorePage() {
   });
 
   const hours = await getStoreStatus();
+  const settings = await db.query.storeSettings.findFirst();
 
   return (
     <StorefrontClient 
       categories={allCategories} 
       products={allProducts} 
       hours={hours} 
+      settings={settings}
     />
   );
 }

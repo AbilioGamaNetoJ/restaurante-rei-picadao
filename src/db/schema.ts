@@ -55,6 +55,7 @@ export const products = pgTable('products', {
   servesPeople: integer('serves_people'),
   originalPrice: numeric('original_price', { precision: 10, scale: 2 }),
   isAvailable: boolean('is_available').notNull().default(true),
+  isFeatured: boolean('is_featured').notNull().default(false),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -212,6 +213,8 @@ export const storeSettings = pgTable('store_settings', {
   minOrder: numeric('min_order', { precision: 10, scale: 2 }).notNull().default('45.00'),
   deliveryFeeKm: numeric('delivery_fee_km', { precision: 10, scale: 2 }).notNull().default('1.50'),
   phone: text('phone'),
+  logoUrl: text('logo_url'),
+  bannerUrl: text('banner_url'),
 });
 
 export const storeSettingsRelations = relations(storeSettings, ({ many }) => ({

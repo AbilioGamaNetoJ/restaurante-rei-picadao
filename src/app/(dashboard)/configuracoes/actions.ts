@@ -23,6 +23,8 @@ export async function updateStoreSettings(id: string | null, data: any) {
         deliveryRadiusKm: data.deliveryRadiusKm,
         minOrder: data.minOrder,
         deliveryFeeKm: data.deliveryFeeKm,
+        logoUrl: data.logoUrl,
+        bannerUrl: data.bannerUrl,
       })
       .where(eq(storeSettings.id, id));
   } else {
@@ -33,6 +35,8 @@ export async function updateStoreSettings(id: string | null, data: any) {
       deliveryRadiusKm: data.deliveryRadiusKm,
       minOrder: data.minOrder,
       deliveryFeeKm: data.deliveryFeeKm,
+      logoUrl: data.logoUrl,
+      bannerUrl: data.bannerUrl,
     });
   }
 

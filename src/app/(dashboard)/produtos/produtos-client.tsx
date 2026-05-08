@@ -29,7 +29,8 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
     sortOrder: 0,
     addonsIds: [] as string[],
     servesPeople: '' as string | number,
-    originalPrice: ''
+    originalPrice: '',
+    isFeatured: false
   });
 
   const handleOpenNew = () => {
@@ -37,7 +38,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
     setFormData({ 
       name: '', categoryIds: [], description: '', 
       price: '', costPrice: '', imageUrl: '', isAvailable: true, sortOrder: 0, addonsIds: [],
-      servesPeople: '', originalPrice: ''
+      servesPeople: '', originalPrice: '', isFeatured: false
     });
     setIsOpen(true);
   };
@@ -55,7 +56,8 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
       sortOrder: product.sortOrder,
       addonsIds: product.addons.map((a: any) => a.addonId),
       servesPeople: product.servesPeople || '',
-      originalPrice: product.originalPrice || ''
+      originalPrice: product.originalPrice || '',
+      isFeatured: product.isFeatured || false
     });
     setIsOpen(true);
   };
@@ -311,17 +313,29 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                 </div>
               </div>
 
-              {editingId && (
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="checkbox" 
-                    id="isAvailable" 
-                    checked={formData.isAvailable}
-                    onChange={(e) => setFormData({...formData, isAvailable: e.target.checked})}
-                  />
-                  <Label htmlFor="isAvailable">Produto Disponível</Label>
+                <div className="flex items-center gap-4 border-t pt-4">
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="checkbox" 
+                      id="isAvailable" 
+                      checked={formData.isAvailable}
+                      onChange={(e) => setFormData({...formData, isAvailable: e.target.checked})}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <Label htmlFor="isAvailable" className="cursor-pointer">Disponível</Label>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="checkbox" 
+                      id="isFeatured" 
+                      checked={formData.isFeatured}
+                      onChange={(e) => setFormData({...formData, isFeatured: e.target.checked})}
+                      className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                    />
+                    <Label htmlFor="isFeatured" className="cursor-pointer font-bold text-amber-600">Destaque (Página Principal)</Label>
+                  </div>
                 </div>
-              )}
               <DialogFooter>
                 <Button type="submit" disabled={isPending}>Salvar Produto</Button>
               </DialogFooter>
@@ -346,7 +360,14 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                 </div>
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
-                    <h3 className="font-medium leading-none mb-1">{product.name}</h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-medium leading-none">{product.name}</h3>
+                      {product.isFeatured && (
+                        <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200 text-[10px] h-4 px-1">
+                          ★ Destaque
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{product.description}</p>
                     <div className="flex items-center gap-2">
                       <div className="text-sm font-bold text-primary">R$ {Number(product.price).toFixed(2)}</div>

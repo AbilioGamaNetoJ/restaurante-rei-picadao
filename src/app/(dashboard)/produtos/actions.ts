@@ -17,6 +17,7 @@ export async function createProduct(data: {
   addonsIds: string[];
   servesPeople?: number;
   originalPrice?: string;
+  isFeatured?: boolean;
 }) {
   const { userId, sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as any)?.role;
@@ -36,6 +37,7 @@ export async function createProduct(data: {
     sortOrder: data.sortOrder,
     servesPeople: data.servesPeople,
     originalPrice: data.originalPrice,
+    isFeatured: data.isFeatured || false,
   }).returning();
 
   // Insere as categorias vinculadas
@@ -74,6 +76,7 @@ export async function updateProduct(id: string, data: {
   addonsIds: string[];
   servesPeople?: number;
   originalPrice?: string;
+  isFeatured?: boolean;
 }) {
   const { userId, sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as any)?.role;
@@ -96,6 +99,7 @@ export async function updateProduct(id: string, data: {
       sortOrder: data.sortOrder,
       servesPeople: data.servesPeople,
       originalPrice: data.originalPrice,
+      isFeatured: data.isFeatured,
       updatedAt: new Date(),
     })
     .where(eq(products.id, id));
