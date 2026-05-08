@@ -29,9 +29,16 @@ export default function EnderecoPage() {
     addressState: '',
   });
   
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   React.useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Redirecionar se o carrinho estiver vazio após a montagem
+    if (items.length === 0) {
+      router.push('/carrinho');
+    }
+  }, [items.length, router]);
 
   if (!mounted) {
     return (
@@ -41,8 +48,8 @@ export default function EnderecoPage() {
     );
   }
 
+  // Se o carrinho estiver vazio, não renderiza o formulário enquanto o redirect acontece
   if (items.length === 0) {
-    router.push('/carrinho');
     return null;
   }
 
@@ -79,11 +86,83 @@ export default function EnderecoPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    
+    // Validar e-mail em tempo real
+    if (name === 'customerEmail') {
+      validateField(name, value);
+    }
+  };
+
+
+  const VALID_DDDS = [
+    '11', '12', '13', '14', '15', '16', '17', '18', '19',
+    '21', '22', '24', '27', '28', '31', '32', '33', '34',
+    '35', '37', '38', '41', '42', '43', '44', '45', '46',
+    '47', '48', '49', '51', '53', '54', '55', '61', '62',
+    '64', '63', '65', '66', '67', '68', '69', '71', '73',
+    '74', '75', '77', '79', '81', '87', '82', '83', '84',
+    '85', '88', '86', '89', '91', '93', '94', '92', '97',
+    '95', '96', '98', '99'
+  ];
+
+  const checkoutSchema = z.object({
+    customerName: z.string().min(3, 'Nome muito curto'),
+    customerEmail: z.string()
+      .min(1, 'E-mail é obrigatório')
+      .refine(v => v.includes('@'), 'Adicione o @ no e-mail')
+      .email('E-mail inválido. Certifique-se de incluir o domínio.'),
+    customerPhone: z.string()
+      .transform(v => v.replace(/\D/g, ''))
+      .refine(v => v.length === 11, 'O telefone deve ter exatamente 11 números (DDD + número)')
+      .refine(v => VALID_DDDS.includes(v.slice(0, 2)), 'O DDD informado não é válido no Brasil'),
+    customerCpfCnpj: z.string().transform(v => v.replace(/\D/g, '')).refine(v => [11, 14].includes(v.length), 'CPF ou CNPJ inválido'),
+    addressZip: z.string().transform(v => v.replace(/\D/g, '')).refine(v => v.length === 8, 'CEP inválido'),
+    addressStreet: z.string().min(3, 'Rua inválida'),
+    addressNumber: z.string().min(1, 'Número obrigatório'),
+    addressComplement: z.string().optional(),
+    addressNeighborhood: z.string().min(2, 'Bairro inválido'),
+    addressCity: z.string().min(2, 'Cidade inválida'),
+    addressState: z.string().length(2, 'UF inválida'),
+  });
+
+  const validateField = (name: string, value: any) => {
+    const fieldSchema = checkoutSchema.shape[name as keyof typeof checkoutSchema.shape];
+    if (!fieldSchema) return;
+
+    const result = fieldSchema.safeParse(value);
+    if (!result.success) {
+      setErrors(prev => ({ ...prev, [name]: result.error.issues[0].message }));
+    } else {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrors({});
+
+    const validation = checkoutSchema.safeParse(formData);
+    
+    if (!validation.success) {
+      const newErrors: Record<string, string> = {};
+      validation.error.issues.forEach(err => {
+        const fieldName = err.path[0]?.toString();
+        if (fieldName) {
+          newErrors[fieldName] = err.message;
+        }
+      });
+      setErrors(newErrors);
+      toast.error('Por favor, corrija os erros no formulário.');
+      setLoading(false);
+      return;
+    }
+
+    const validatedData = validation.data;
 
     try {
       // 1. Calculate delivery fee and validate address distance
@@ -101,9 +180,12 @@ export default function EnderecoPage() {
         return;
       }
 
-      // 2. Save checkout data to state
+      // 2. Save checkout data to state (using cleaned data)
       setCheckoutData({
         ...formData,
+        customerPhone: validatedData.customerPhone,
+        customerCpfCnpj: validatedData.customerCpfCnpj,
+        addressZip: validatedData.addressZip,
         distanceKm: data.distanceKm,
         deliveryFee: data.deliveryFee,
         lat: data.lat,
@@ -130,21 +212,59 @@ export default function EnderecoPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="customerName">Nome Completo</Label>
-              <Input required id="customerName" name="customerName" value={formData.customerName} onChange={handleChange} />
+              {errors.customerName && <p className="text-red-500 text-sm font-medium">{errors.customerName}</p>}
+              <Input required id="customerName" name="customerName" value={formData.customerName} onChange={handleChange} placeholder="Ex: Abílio Gama" />
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="customerPhone">Telefone/WhatsApp</Label>
-              <Input required id="customerPhone" name="customerPhone" value={formData.customerPhone} onChange={handleChange} />
+              {errors.customerPhone && <p className="text-red-500 text-sm font-medium">{errors.customerPhone}</p>}
+              <Input
+                required
+                id="customerPhone"
+                name="customerPhone"
+                value={formData.customerPhone}
+                onBlur={() => validateField('customerPhone', formData.customerPhone)}
+                onChange={(e) => {
+                  let v = e.target.value.replace(/\D/g, '');
+                  if (v.length > 11) v = v.slice(0, 11);
+                  
+                  if (v.length <= 10) {
+                    v = v.replace(/(\d{2})(\d)/, '($1) $2');
+                    v = v.replace(/(\d{4})(\d)/, '$1-$2');
+                  } else {
+                    v = v.replace(/(\d{2})(\d)/, '($1) $2');
+                    v = v.replace(/(\d{5})(\d)/, '$1-$2');
+                  }
+                  
+                  setFormData({ ...formData, customerPhone: v });
+                  
+                  // Validar telefone em tempo real
+                  validateField('customerPhone', v);
+                }}
+                placeholder="(00) 00000-0000"
+                maxLength={15}
+              />
             </div>
             
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="customerEmail">E-mail</Label>
-              <Input required type="email" id="customerEmail" name="customerEmail" value={formData.customerEmail} onChange={handleChange} />
+              {errors.customerEmail && <p className="text-red-500 text-sm font-medium">{errors.customerEmail}</p>}
+              <Input 
+                required 
+                type="email" 
+                id="customerEmail" 
+                name="customerEmail" 
+                value={formData.customerEmail} 
+                onBlur={() => validateField('customerEmail', formData.customerEmail)}
+                onChange={handleChange} 
+                placeholder="seu@email.com" 
+              />
             </div>
 
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="customerCpfCnpj">CPF ou CNPJ</Label>
+              {errors.customerCpfCnpj && <p className="text-red-500 text-sm font-medium">{errors.customerCpfCnpj}</p>}
               <Input
                 required
                 id="customerCpfCnpj"
@@ -178,37 +298,52 @@ export default function EnderecoPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="addressZip">CEP</Label>
+              {errors.addressZip && <p className="text-red-500 text-sm font-medium">{errors.addressZip}</p>}
               <Input required id="addressZip" name="addressZip" value={formData.addressZip} onChange={handleZipChange} maxLength={9} placeholder="00000-000" />
             </div>
 
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="addressStreet">Rua / Logradouro</Label>
+              {errors.addressStreet && <p className="text-red-500 text-sm font-medium">{errors.addressStreet}</p>}
               <Input required id="addressStreet" name="addressStreet" value={formData.addressStreet} onChange={handleChange} />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="addressNumber">Número</Label>
+              {errors.addressNumber && <p className="text-red-500 text-sm font-medium">{errors.addressNumber}</p>}
               <Input required id="addressNumber" name="addressNumber" value={formData.addressNumber} onChange={handleChange} />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="addressComplement">Complemento (opcional)</Label>
+              {errors.addressComplement && <p className="text-red-500 text-sm font-medium">{errors.addressComplement}</p>}
               <Input id="addressComplement" name="addressComplement" value={formData.addressComplement} onChange={handleChange} />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="addressNeighborhood">Bairro</Label>
+              {errors.addressNeighborhood && <p className="text-red-500 text-sm font-medium">{errors.addressNeighborhood}</p>}
               <Input required id="addressNeighborhood" name="addressNeighborhood" value={formData.addressNeighborhood} onChange={handleChange} />
             </div>
 
             <div className="grid grid-cols-2 gap-4 space-y-0">
               <div className="space-y-2">
                 <Label htmlFor="addressCity">Cidade</Label>
+                {errors.addressCity && <p className="text-red-500 text-sm font-medium">{errors.addressCity}</p>}
                 <Input required id="addressCity" name="addressCity" value={formData.addressCity} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="addressState">Estado</Label>
-                <Input required id="addressState" name="addressState" value={formData.addressState} onChange={handleChange} maxLength={2} />
+                {errors.addressState && <p className="text-red-500 text-sm font-medium">{errors.addressState}</p>}
+                <Input 
+                  required 
+                  id="addressState" 
+                  name="addressState" 
+                  value={formData.addressState} 
+                  onChange={(e) => setFormData({ ...formData, addressState: e.target.value.toUpperCase() })} 
+                  maxLength={2} 
+                  placeholder="SC"
+                />
               </div>
             </div>
           </div>

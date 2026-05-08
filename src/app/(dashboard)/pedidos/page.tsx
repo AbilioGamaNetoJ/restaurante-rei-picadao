@@ -6,6 +6,7 @@ import { PedidosClient } from './pedidos-client';
 
 export default async function PedidosPage() {
   const allOrders = await db.query.orders.findMany({
+    where: (orders, { notInArray }) => notInArray(orders.status, ['pending']),
     orderBy: [desc(orders.createdAt)],
     with: {
       items: {

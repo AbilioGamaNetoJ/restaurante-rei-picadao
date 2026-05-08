@@ -14,7 +14,7 @@ import { updateOrderStatus } from './actions';
 type OrderStatus = 'pending' | 'paid' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
 
 const statusMap: Record<OrderStatus, { label: string; color: string; next?: { status: OrderStatus; label: string } }> = {
-  pending: { label: 'Pendente', color: 'bg-yellow-500', next: { status: 'paid', label: 'Marcar como Pago' } },
+  pending: { label: 'Aguardando Pagamento', color: 'bg-yellow-500' },
   paid: { label: 'Pago', color: 'bg-blue-500', next: { status: 'preparing', label: 'Iniciar Preparo' } },
   preparing: { label: 'Preparando', color: 'bg-purple-500', next: { status: 'ready', label: 'Pronto para Entrega' } },
   ready: { label: 'Pronto', color: 'bg-orange-500', next: { status: 'delivering', label: 'Saiu para Entrega' } },
@@ -24,7 +24,7 @@ const statusMap: Record<OrderStatus, { label: string; color: string; next?: { st
 };
 
 const tabs: { value: string; label: string; statuses: OrderStatus[] }[] = [
-  { value: 'active', label: 'Ativos', statuses: ['pending', 'paid', 'preparing', 'ready', 'delivering'] },
+  { value: 'active', label: 'Ativos', statuses: ['paid', 'preparing', 'ready', 'delivering'] },
   { value: 'completed', label: 'Finalizados', statuses: ['delivered'] },
   { value: 'cancelled', label: 'Cancelados', statuses: ['cancelled'] },
 ];

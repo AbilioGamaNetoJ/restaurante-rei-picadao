@@ -44,7 +44,7 @@ export function CartDrawer({ trigger }: { trigger?: React.ReactElement }) {
 
   return (
     <Sheet>
-      <SheetTrigger render={trigger || defaultTrigger} />
+      <SheetTrigger render={trigger || defaultTrigger} nativeButton={true} />
       <SheetContent className="w-full sm:max-w-md flex flex-col h-full">
         <SheetHeader>
           <SheetTitle>Seu Carrinho</SheetTitle>

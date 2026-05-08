@@ -44,7 +44,6 @@ export function StorefrontClient({ categories, products, hours }: StorefrontClie
     if (todayHours.length === 0) return false;
 
     return todayHours.some(h => {
-      if (!h.isOpen) return false;
       const [openH, openM] = h.openTime.split(':').map(Number);
       const [closeH, closeM] = h.closeTime.split(':').map(Number);
       const openTime = openH * 60 + openM;

@@ -19,7 +19,7 @@ function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
 }
 
-function DialogClose({ nativeButton = false, ...props }: DialogPrimitive.Close.Props) {
+function DialogClose({ nativeButton = true, ...props }: DialogPrimitive.Close.Props) {
   return <DialogPrimitive.Close data-slot="dialog-close" nativeButton={nativeButton} {...props} />
 }
 
@@ -62,7 +62,7 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            nativeButton={false}
+            nativeButton={true}
             render={
               <Button
                 variant="ghost"
@@ -110,7 +110,7 @@ function DialogFooter({
     >
       {children}
       {showCloseButton && (
-        <DialogPrimitive.Close nativeButton={false} render={<Button variant="outline" />}>
+        <DialogPrimitive.Close nativeButton={true} render={<Button variant="outline" />}>
           Close
         </DialogPrimitive.Close>
       )}

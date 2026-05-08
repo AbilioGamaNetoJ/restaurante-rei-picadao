@@ -10,8 +10,14 @@ export async function createAsaasCustomer(name: string, email: string, phone: st
   const apiKey = process.env.ASAAS_API_KEY;
   if (!apiKey) throw new Error("ASAAS_API_KEY not configured.");
 
-  // Strip formatting from cpfCnpj (remove dots, dashes, slashes)
+  // Strip formatting from cpfCnpj and phone (remove dots, dashes, slashes, spaces, parens)
   const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
+  let cleanPhone = phone.replace(/\D/g, '');
+
+  // Add Brazil country code (55) if it's a standard 10 or 11 digit number
+  if (cleanPhone.length === 10 || cleanPhone.length === 11) {
+    cleanPhone = `55${cleanPhone}`;
+  }
 
   try {
     // First, check if customer exists
@@ -38,7 +44,8 @@ export async function createAsaasCustomer(name: string, email: string, phone: st
       body: JSON.stringify({
         name,
         email,
-        phone,
+        phone: cleanPhone,
+        mobilePhone: cleanPhone,
         cpfCnpj: cleanCpfCnpj,
       }),
     });

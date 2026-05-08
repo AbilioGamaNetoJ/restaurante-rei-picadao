@@ -11,6 +11,7 @@ export default function PagamentoPage() {
   const router = useRouter();
   const { items, checkoutData, getTotal, clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -26,6 +27,7 @@ export default function PagamentoPage() {
   }
 
   if (items.length === 0 || !checkoutData) {
+    if (redirecting) return null; // Não redirecionar se estivermos indo para o Asaas
     router.push('/carrinho');
     return null;
   }
@@ -64,6 +66,8 @@ export default function PagamentoPage() {
       
       // Redirecionar para o link de checkout do Asaas
       if (data.checkoutUrl) {
+        setRedirecting(true);
+        clearCart();
         window.location.href = data.checkoutUrl;
       } else {
         toast.error('Link de pagamento não recebido.');
