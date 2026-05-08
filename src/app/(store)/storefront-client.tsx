@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import * as React from 'react';
 import { useState, useRef, useEffect } from "react";
@@ -22,6 +22,7 @@ interface Category {
   name: string;
   slug: string;
   sortOrder: number;
+  isVirtual?: boolean;
 }
 
 interface StorefrontClientProps {
@@ -34,7 +35,13 @@ interface StorefrontClientProps {
 export function StorefrontClient({ categories, products, hours, settings }: StorefrontClientProps) {
   const [mounted, setMounted] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string>(categories[0]?.id || "");
+  
+  const featuredProducts = products.filter(p => p.isFeatured);
+  const displayCategories = featuredProducts.length > 0 
+    ? [{ id: 'featured', name: 'Destaques', slug: 'destaques', sortOrder: -1, isVirtual: true } as Category, ...categories]
+    : categories;
+
+  const [activeCategory, setActiveCategory] = useState<string>(displayCategories[0]?.id || "");
   
   const categoryRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
@@ -62,7 +69,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
     });
 
     return () => observer.disconnect();
-  }, [mounted, categories]);
+  }, [mounted, displayCategories]);
 
   const scrollToCategory = (categoryId: string) => {
     const element = document.getElementById(categoryId);
@@ -180,7 +187,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
       <div className="sticky top-[64px] z-40 w-full bg-white/80 backdrop-blur-xl border-b -mx-4 px-4 py-3 shadow-sm">
         <ScrollArea className="w-full whitespace-nowrap">
           <div className="flex w-max space-x-3 p-1">
-            {categories.map((category) => (
+            {displayCategories.map((category) => (
               <Button
                 key={category.id}
                 variant="ghost"
@@ -202,6 +209,46 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
 
       {/* Menu Sections */}
       <div className="space-y-20 mt-8">
+        {featuredProducts.length > 0 && (
+          <section 
+            id="featured"
+            ref={(el) => { categoryRefs.current['featured'] = el; }}
+            className="scroll-mt-40 px-2"
+          >
+            <div className="flex flex-col gap-1 mb-8">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-2 bg-yellow-500 rounded-full shadow-[0_0_15px_rgba(234,179,8,0.4)]" />
+                <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tighter flex items-center gap-3">
+                  Principais Escolhas
+                  <Star className="h-8 w-8 text-yellow-500 fill-yellow-500 animate-pulse" />
+                </h2>
+              </div>
+              <p className="text-gray-400 text-sm font-medium ml-6">
+                Os queridinhos da nossa cozinha
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {featuredProducts.map((product) => (
+                <ProductCard 
+                  key={`featured-${product.id}`}
+                  product={product} 
+                  onClick={() => setSelectedProduct({
+                    id: product.id,
+                    name: product.name,
+                    description: product.description,
+                    price: product.price,
+                    imageUrl: product.imageUrl,
+                    addons: product.addons,
+                    servesPeople: product.servesPeople,
+                    originalPrice: product.originalPrice
+                  })}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {categories.map((category) => {
           const categoryProducts = products.filter(p => 
             p.categories.some((c: any) => c.categoryId === category.id)
