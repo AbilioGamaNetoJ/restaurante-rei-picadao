@@ -18,7 +18,7 @@ Aplicação full-stack de delivery para o **Rei do Picadão - Porções** (Canas
 | **Frete** | R$1,50/km via Google Routes API (ComputeRouteMatrix) |
 | **Pedido mínimo** | R$45,00 |
 | **Horário** | Multi-turno por dia (ver tabela abaixo). Fora do horário: popup de aviso, carrinho persiste em `localStorage` |
-| **Endereço da loja** | Rua José Daux, 5314 – Canasvieiras, Florianópolis – SC, CEP 88054-250 |
+| **Endereço da loja** | R. Francisco Jacinto de Melo, 1449 - Areias, São José - SC, 88113-300 |
 | **Dados iniciais** | Seed com categorias + config loja. Produtos cadastrados via dashboard |
 | **Upload de imagens** | UploadThing (2GB grátis, CDN, SDK Next.js) |
 
@@ -325,7 +325,7 @@ Zustand com middleware `persist` (localStorage):
 
 #### [NEW] `src/app/api/frete/route.ts`
 1. Geocodifica endereço do cliente (Google Geocoding API v4)
-2. Calcula distância via Routes API `ComputeRouteMatrix` (origem: Rua José Daux, 5314, Canasvieiras)
+2. Calcula distância via Routes API `ComputeRouteMatrix` (origem: R. Francisco Jacinto de Melo, 1449, Areias, São José)
 3. Se > 10km → `"Desculpe, mas não realizamos pedidos em endereços com mais de 10km de distância da loja"`
 4. Se OK → `frete = distância_km × R$1,50`
 

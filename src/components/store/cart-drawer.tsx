@@ -1,4 +1,6 @@
 'use client';
+import * as React from 'react';
+import { useEffect, useState } from 'react';
 
 import { useCartStore } from "@/stores/cart-store";
 import { Button } from "@/components/ui/button";
@@ -15,31 +17,46 @@ import { ShoppingCart, Minus, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 
-export function CartDrawer() {
+export function CartDrawer({ trigger }: { trigger?: React.ReactElement }) {
+  const [mounted, setMounted] = useState(false);
   const { items, removeItem, updateQuantity, getTotal } = useCartStore();
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalValue = getTotal();
 
+  const defaultTrigger = (
+    <button
+      className="relative inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+    >
+      <ShoppingCart className="h-5 w-5" />
+      {mounted && totalItems > 0 && (
+        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center border border-white">
+          {totalItems}
+        </span>
+      )}
+    </button>
+  );
+
+
   return (
     <Sheet>
-      <SheetTrigger render={
-        <Button variant="outline" size="icon" className="relative">
-          <ShoppingCart className="h-5 w-5" />
-          {totalItems > 0 && (
-            <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-              {totalItems}
-            </span>
-          )}
-        </Button>
-      } />
+      <SheetTrigger render={trigger || defaultTrigger} />
       <SheetContent className="w-full sm:max-w-md flex flex-col h-full">
         <SheetHeader>
           <SheetTitle>Seu Carrinho</SheetTitle>
         </SheetHeader>
         
         <div className="flex-1 overflow-hidden py-4">
-          {items.length === 0 ? (
+          {!mounted ? (
+            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+              <div className="h-12 w-12 mb-4 animate-pulse bg-muted rounded-full" />
+              <p>Carregando...</p>
+            </div>
+          ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
               <ShoppingCart className="h-12 w-12 mb-4 opacity-20" />
               <p>Seu carrinho está vazio.</p>
@@ -129,7 +146,7 @@ export function CartDrawer() {
               </span>
             </div>
             <SheetFooter>
-              <Button render={<Link href="/checkout/endereco" />} className="w-full" size="lg">
+              <Button render={<Link href="/checkout/endereco" />} className="w-full" size="lg" nativeButton={false}>
                 Avançar para o Checkout
               </Button>
             </SheetFooter>

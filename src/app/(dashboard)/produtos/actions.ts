@@ -15,6 +15,8 @@ export async function createProduct(data: {
   imageUrl: string; 
   sortOrder: number;
   addonsIds: string[];
+  servesPeople?: number;
+  originalPrice?: string;
 }) {
   const { userId, sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as any)?.role;
@@ -32,6 +34,8 @@ export async function createProduct(data: {
     costPrice: data.costPrice,
     imageUrl: data.imageUrl,
     sortOrder: data.sortOrder,
+    servesPeople: data.servesPeople,
+    originalPrice: data.originalPrice,
   }).returning();
 
   // Insere as categorias vinculadas
@@ -68,6 +72,8 @@ export async function updateProduct(id: string, data: {
   isAvailable: boolean;
   sortOrder: number;
   addonsIds: string[];
+  servesPeople?: number;
+  originalPrice?: string;
 }) {
   const { userId, sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as any)?.role;
@@ -88,6 +94,8 @@ export async function updateProduct(id: string, data: {
       imageUrl: data.imageUrl,
       isAvailable: data.isAvailable,
       sortOrder: data.sortOrder,
+      servesPeople: data.servesPeople,
+      originalPrice: data.originalPrice,
       updatedAt: new Date(),
     })
     .where(eq(products.id, id));

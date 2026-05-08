@@ -42,13 +42,13 @@ export async function createAsaasCustomer(name: string, email: string, phone: st
     const data = await res.json();
     if (!res.ok) {
       console.error('Error creating Asaas customer:', data);
-      return null;
+      throw new Error(`Asaas Customer Error: ${JSON.stringify(data)}`);
     }
 
     return { id: data.id };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in createAsaasCustomer:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -60,6 +60,8 @@ export async function createCheckout(orderId: string, customerId: string, value:
   dueDate.setDate(dueDate.getDate() + 1); // 1 day to expire
 
   try {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
     const res = await fetch(`${ASAAS_API_URL}/payments`, {
       method: 'POST',
       headers: {
@@ -68,13 +70,13 @@ export async function createCheckout(orderId: string, customerId: string, value:
       },
       body: JSON.stringify({
         customer: customerId,
-        billingType: 'UNDEFINED', // Let the customer choose (Pix, Credit Card, etc.)
+        billingType: 'UNDEFINED',
         value,
         dueDate: dueDate.toISOString().split('T')[0],
         description,
         externalReference: orderId,
         callback: {
-          successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/confirmacao?orderId=${orderId}`,
+          successUrl: `${appUrl}/checkout/confirmacao?orderId=${orderId}`,
         }
       }),
     });
@@ -82,12 +84,12 @@ export async function createCheckout(orderId: string, customerId: string, value:
     const data = await res.json();
     if (!res.ok) {
       console.error('Error creating Asaas payment:', data);
-      return null;
+      throw new Error(`Asaas Payment Error: ${JSON.stringify(data)}`);
     }
 
-    return data.invoiceUrl; // The checkout URL
-  } catch (error) {
+    return data.invoiceUrl;
+  } catch (error: any) {
     console.error('Error in createCheckout:', error);
-    return null;
+    throw error;
   }
 }

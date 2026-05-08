@@ -38,10 +38,10 @@ export async function POST(req: Request) {
         addressCity: checkoutData.addressCity,
         addressState: checkoutData.addressState,
         addressZip: checkoutData.addressZip,
-        distanceKm: checkoutData.distanceKm.toString(),
-        deliveryFee: deliveryFee.toString(),
-        subtotal: subtotal.toString(),
-        total: total.toString(),
+        distanceKm: (checkoutData.distanceKm ?? 0).toString(),
+        deliveryFee: (deliveryFee ?? 0).toString(),
+        subtotal: (subtotal ?? 0).toString(),
+        total: (total ?? 0).toString(),
         status: 'pending',
       }).returning({ id: orders.id });
 
@@ -81,15 +81,10 @@ export async function POST(req: Request) {
     const description = `Pedido #${newOrder.id.split('-')[0].toUpperCase()} - Rei do Picadão`;
     const checkoutUrl = await createCheckout(
       newOrder.id,
-      customer.id,
+      customer!.id,
       total,
       description
     );
-
-    if (!checkoutUrl) {
-      // Falha ao gerar o link, mas o pedido já foi salvo no DB como pendente
-      return NextResponse.json({ error: 'Erro ao gerar link de pagamento.' }, { status: 500 });
-    }
 
     // 4. Update Order with Checkout URL
     await db.update(orders)
@@ -98,8 +93,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ checkoutUrl });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating checkout:', error);
-    return NextResponse.json({ error: 'Erro interno ao processar o pedido.' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Erro interno ao processar o pedido.',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 });
   }
 }

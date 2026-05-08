@@ -1,5 +1,5 @@
 'use client';
-
+import * as React from 'react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
@@ -13,6 +13,7 @@ export default function EnderecoPage() {
   const router = useRouter();
   const { items, setCheckoutData } = useCartStore();
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = React.useState(false);
   
   const [formData, setFormData] = useState({
     customerName: '',
@@ -26,6 +27,18 @@ export default function EnderecoPage() {
     addressCity: '',
     addressState: '',
   });
+  
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="container max-w-2xl mx-auto py-10 px-4 text-center">
+        <p>Carregando formulário...</p>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     router.push('/carrinho');

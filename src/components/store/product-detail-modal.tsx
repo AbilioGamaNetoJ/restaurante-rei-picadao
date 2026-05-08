@@ -1,5 +1,8 @@
 'use client';
 
+import * as React from 'react';
+
+
 import { useState } from 'react';
 import {
   Dialog,
@@ -29,6 +32,8 @@ export interface Product {
   price: string;
   imageUrl: string | null;
   addons?: { addon: Addon }[];
+  servesPeople?: number | null;
+  originalPrice?: string | null;
 }
 
 interface ProductDetailModalProps {
@@ -121,7 +126,22 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
           )}
           
           <p className="text-sm text-gray-500">{product.description}</p>
-          <div className="font-bold text-lg">R$ {productPrice.toFixed(2)}</div>
+          
+          {product.servesPeople && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-gray-50 p-2 rounded-md">
+              <span>👥</span>
+              <span>Este item serve {product.servesPeople} {product.servesPeople > 1 ? 'pessoas' : 'pessoa'}</span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3">
+            <div className="font-bold text-2xl text-primary">R$ {productPrice.toFixed(2)}</div>
+            {product.originalPrice && (
+              <div className="text-base text-muted-foreground line-through">
+                R$ {parseFloat(product.originalPrice).toFixed(2)}
+              </div>
+            )}
+          </div>
 
           {/* Addons Section */}
           {product.addons && product.addons.length > 0 && (

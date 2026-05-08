@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/stores/cart-store';
@@ -10,6 +11,19 @@ export default function PagamentoPage() {
   const router = useRouter();
   const { items, checkoutData, getTotal, clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="container max-w-2xl mx-auto py-10 px-4 text-center">
+        <p>Carregando resumo do pedido...</p>
+      </div>
+    );
+  }
 
   if (items.length === 0 || !checkoutData) {
     router.push('/carrinho');

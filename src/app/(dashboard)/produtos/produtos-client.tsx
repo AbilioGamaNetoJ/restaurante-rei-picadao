@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import React, { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,14 +27,17 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
     imageUrl: '',
     isAvailable: true,
     sortOrder: 0,
-    addonsIds: [] as string[]
+    addonsIds: [] as string[],
+    servesPeople: '' as string | number,
+    originalPrice: ''
   });
 
   const handleOpenNew = () => {
     setEditingId(null);
     setFormData({ 
       name: '', categoryIds: [], description: '', 
-      price: '', costPrice: '', imageUrl: '', isAvailable: true, sortOrder: 0, addonsIds: [] 
+      price: '', costPrice: '', imageUrl: '', isAvailable: true, sortOrder: 0, addonsIds: [],
+      servesPeople: '', originalPrice: ''
     });
     setIsOpen(true);
   };
@@ -50,7 +53,9 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
       imageUrl: product.imageUrl || '',
       isAvailable: product.isAvailable,
       sortOrder: product.sortOrder,
-      addonsIds: product.addons.map((a: any) => a.addonId)
+      addonsIds: product.addons.map((a: any) => a.addonId),
+      servesPeople: product.servesPeople || '',
+      originalPrice: product.originalPrice || ''
     });
     setIsOpen(true);
   };
@@ -65,10 +70,18 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
     startTransition(async () => {
       try {
         if (editingId) {
-          await updateProduct(editingId, formData);
+          await updateProduct(editingId, {
+            ...formData,
+            servesPeople: formData.servesPeople === '' ? undefined : Number(formData.servesPeople),
+            originalPrice: formData.originalPrice || undefined
+          });
           toast.success('Produto atualizado');
         } else {
-          await createProduct(formData);
+          await createProduct({
+            ...formData,
+            servesPeople: formData.servesPeople === '' ? undefined : Number(formData.servesPeople),
+            originalPrice: formData.originalPrice || undefined
+          });
           toast.success('Produto criado');
         }
         setIsOpen(false);
@@ -184,6 +197,18 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                 <div className="space-y-2">
                   <Label htmlFor="sortOrder">Ordem</Label>
                   <Input id="sortOrder" type="number" value={formData.sortOrder} onChange={(e) => setFormData({...formData, sortOrder: Number(e.target.value)})} required />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="servesPeople">Serve quantas pessoas? (Opcional)</Label>
+                  <Input id="servesPeople" type="number" placeholder="Ex: 2" value={formData.servesPeople} onChange={(e) => setFormData({...formData, servesPeople: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="originalPrice">Preço Original / Riscar (Opcional)</Label>
+                  <Input id="originalPrice" type="number" step="0.01" placeholder="Ex: 89.90" value={formData.originalPrice} onChange={(e) => setFormData({...formData, originalPrice: e.target.value})} />
+                  <p className="text-[10px] text-muted-foreground">Isso mostrará "De R$ 89,90 por R$ [Preço de Venda]"</p>
                 </div>
               </div>
 
@@ -323,7 +348,17 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                   <div>
                     <h3 className="font-medium leading-none mb-1">{product.name}</h3>
                     <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{product.description}</p>
-                    <div className="text-sm font-bold">R$ {Number(product.price).toFixed(2)}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm font-bold text-primary">R$ {Number(product.price).toFixed(2)}</div>
+                      {product.originalPrice && (
+                        <div className="text-xs text-muted-foreground line-through">R$ {Number(product.originalPrice).toFixed(2)}</div>
+                      )}
+                    </div>
+                    {product.servesPeople && (
+                      <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                        👥 Serve {product.servesPeople} {product.servesPeople > 1 ? 'pessoas' : 'pessoa'}
+                      </p>
+                    )}
                   </div>
                   <div className="flex justify-between items-center mt-2">
                   <div className="flex flex-wrap gap-1 mt-2">

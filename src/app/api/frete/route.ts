@@ -6,16 +6,16 @@ import { calculateDistance, geocodeAddress } from '@/lib/google-maps';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { addressStreet, addressNumber, addressCity, addressState, addressZip } = body;
+    const { addressStreet, addressNumber, addressNeighborhood, addressCity, addressState, addressZip } = body;
 
-    if (!addressStreet || !addressNumber || !addressCity || !addressState || !addressZip) {
+    if (!addressStreet || !addressNumber || !addressNeighborhood || !addressCity || !addressState || !addressZip) {
       return NextResponse.json(
         { error: 'Endereço incompleto para cálculo de frete.' },
         { status: 400 }
       );
     }
 
-    const fullAddress = `${addressStreet}, ${addressNumber} - ${addressCity}, ${addressState}, ${addressZip}`;
+    const fullAddress = `${addressStreet}, ${addressNumber}, ${addressNeighborhood}, ${addressCity}, ${addressState}, ${addressZip}, Brazil`;
 
     // 1. Get Store Settings
     const settings = await db.query.storeSettings.findFirst();
@@ -62,13 +62,31 @@ export async function POST(req: Request) {
     const { distanceKm } = routeInfo;
     const maxRadius = Number(settings.deliveryRadiusKm) || 10;
 
+    console.log('--- DEBUG FRETE ---');
+    console.log('Origin:', origin);
+    console.log('Full Address:', fullAddress);
+    console.log('Destination Coords:', destination);
+    console.log('Calculated Distance (km):', distanceKm);
+    console.log('Max Radius (km):', maxRadius);
+    console.log('-------------------');
+
+    const originAddress = settings.address;
+
+
     // 4. Validate Delivery Radius
     if (distanceKm > maxRadius) {
       return NextResponse.json(
         { 
           error: `Desculpe, mas não realizamos pedidos em endereços com mais de ${maxRadius}km de distância da loja.`,
-          distanceKm
+          distanceKm,
+          debug: {
+            origin: originAddress,
+            destination: fullAddress,
+            originCoords: origin,
+            destinationCoords: destination
+          }
         },
+
         { status: 400 }
       );
     }

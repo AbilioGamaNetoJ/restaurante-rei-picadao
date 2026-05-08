@@ -39,10 +39,13 @@ async function main() {
   // 2. Store Settings
   const insertedStore = await db.insert(storeSettings).values({
     name: 'Rei do Picadão - Porções',
-    address: 'Rua José Daux, 5314 – Canasvieiras, Florianópolis – SC, CEP 88054-250',
+    address: 'R. Francisco Jacinto de Melo, 1449 - Areias, São José - SC, 88113-300',
+    lat: '-27.55819000',
+    lng: '-48.62910490',
     deliveryRadiusKm: '10.00',
     minOrder: '45.00',
     deliveryFeeKm: '1.50',
+
   }).returning({ id: storeSettings.id });
   
   const storeId = insertedStore[0].id;

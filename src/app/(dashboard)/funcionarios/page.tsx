@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { clerkClient, auth } from '@clerk/nextjs/server';
 import { FuncionariosClient } from './funcionarios-client';
 

@@ -52,6 +52,8 @@ export const products = pgTable('products', {
   price: numeric('price', { precision: 10, scale: 2 }).notNull(),
   costPrice: numeric('cost_price', { precision: 10, scale: 2 }),
   imageUrl: text('image_url'),
+  servesPeople: integer('serves_people'),
+  originalPrice: numeric('original_price', { precision: 10, scale: 2 }),
   isAvailable: boolean('is_available').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: timestamp('created_at').defaultNow().notNull(),

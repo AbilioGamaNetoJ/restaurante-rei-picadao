@@ -1,5 +1,8 @@
 'use client';
 
+import * as React from 'react';
+
+
 import { useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useCartStore } from '@/stores/cart-store';
@@ -25,9 +28,9 @@ function ConfirmacaoContent() {
         <p className="text-muted-foreground mb-8">
           Não conseguimos identificar o número do seu pedido.
         </p>
-        <Link href="/">
-          <Button>Voltar ao início</Button>
-        </Link>
+        <Button render={<Link href="/" />} nativeButton={false}>
+          Voltar ao início
+        </Button>
       </div>
     );
   }
@@ -52,9 +55,9 @@ function ConfirmacaoContent() {
         Assim que o pagamento for processado pelo nosso sistema, começaremos o preparo do seu pedido. Você pode acompanhar o status caso tenhamos o seu contato via WhatsApp.
       </p>
       
-      <Link href="/">
-        <Button size="lg">Voltar ao Cardápio</Button>
-      </Link>
+      <Button render={<Link href="/" />} size="lg" nativeButton={false}>
+        Voltar ao Cardápio
+      </Button>
     </div>
   );
 }

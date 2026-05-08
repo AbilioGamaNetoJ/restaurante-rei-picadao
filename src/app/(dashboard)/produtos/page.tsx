@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { db } from '@/db';
 import { products, categories, addons } from '@/db/schema';
 import { asc, eq } from 'drizzle-orm';

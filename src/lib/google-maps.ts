@@ -2,7 +2,8 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) throw new Error("GOOGLE_MAPS_API_KEY not configured.");
 
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
+  // Add country and region hints for better accuracy in Brazil
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&components=country:BR&key=${apiKey}`;
 
   try {
     const res = await fetch(url);
@@ -13,7 +14,10 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
       return null;
     }
 
+    // Check if the result is actually in the expected area (optional, but good for debugging)
     const location = data.results[0].geometry.location;
+    console.log(`Geocoded "${address}" to:`, location);
+    
     return {
       lat: location.lat,
       lng: location.lng,
@@ -59,7 +63,8 @@ export async function calculateDistance(
       },
     ],
     travelMode: "DRIVE",
-    routingPreference: "ROUTING_PREFERENCE_UNSPECIFIED",
+    routingPreference: "TRAFFIC_AWARE", // More reliable for distance matrix
+    units: "METRIC",
   };
 
   try {
