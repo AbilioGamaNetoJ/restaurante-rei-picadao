@@ -34,6 +34,17 @@ export default function EnderecoPage() {
   React.useEffect(() => {
     setMounted(true);
     
+    // Carregar dados salvos do localStorage
+    const savedData = localStorage.getItem('checkout-customer-data');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setFormData(prev => ({ ...prev, ...parsed }));
+      } catch (e) {
+        console.error('Error parsing saved checkout data', e);
+      }
+    }
+
     // Redirecionar se o carrinho estiver vazio após a montagem
     if (items.length === 0) {
       router.push('/carrinho');
@@ -69,23 +80,32 @@ export default function EnderecoPage() {
         const res = await fetch(`https://viacep.com.br/ws/${zip}/json/`);
         const data = await res.json();
         if (!data.erro) {
-          setFormData((prev) => ({
-            ...prev,
+          const newAddressData = {
+            ...formData,
+            addressZip: formattedZip,
             addressStreet: data.logradouro,
             addressNeighborhood: data.bairro,
             addressCity: data.localidade,
             addressState: data.uf,
-          }));
+          };
+          setFormData(newAddressData);
+          localStorage.setItem('checkout-customer-data', JSON.stringify(newAddressData));
         }
       } catch (error) {
         console.error('ViaCEP error:', error);
       }
+    } else {
+      localStorage.setItem('checkout-customer-data', JSON.stringify({ ...formData, addressZip: formattedZip }));
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const newFormData = { ...formData, [name]: value };
+    setFormData(newFormData);
+    
+    // Salvar no localStorage
+    localStorage.setItem('checkout-customer-data', JSON.stringify(newFormData));
     
     // Validar e-mail em tempo real
     if (name === 'customerEmail') {
@@ -237,7 +257,9 @@ export default function EnderecoPage() {
                     v = v.replace(/(\d{5})(\d)/, '$1-$2');
                   }
                   
-                  setFormData({ ...formData, customerPhone: v });
+                  const newFormData = { ...formData, customerPhone: v };
+                  setFormData(newFormData);
+                  localStorage.setItem('checkout-customer-data', JSON.stringify(newFormData));
                   
                   // Validar telefone em tempo real
                   validateField('customerPhone', v);
@@ -283,7 +305,9 @@ export default function EnderecoPage() {
                     v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
                     v = v.replace(/(\d{4})(\d)/, '$1-$2');
                   }
-                  setFormData({ ...formData, customerCpfCnpj: v });
+                  const newFormData = { ...formData, customerCpfCnpj: v };
+                  setFormData(newFormData);
+                  localStorage.setItem('checkout-customer-data', JSON.stringify(newFormData));
                 }}
                 placeholder="000.000.000-00"
                 maxLength={18}
@@ -340,7 +364,12 @@ export default function EnderecoPage() {
                   id="addressState" 
                   name="addressState" 
                   value={formData.addressState} 
-                  onChange={(e) => setFormData({ ...formData, addressState: e.target.value.toUpperCase() })} 
+                  onChange={(e) => {
+                    const v = e.target.value.toUpperCase();
+                    const newFormData = { ...formData, addressState: v };
+                    setFormData(newFormData);
+                    localStorage.setItem('checkout-customer-data', JSON.stringify(newFormData));
+                  }} 
                   maxLength={2} 
                   placeholder="SC"
                 />

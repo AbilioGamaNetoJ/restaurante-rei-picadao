@@ -8,7 +8,16 @@ interface AsaasCustomer {
 
 export async function createAsaasCustomer(name: string, email: string, phone: string, cpfCnpj: string): Promise<AsaasCustomer | null> {
   const apiKey = process.env.ASAAS_API_KEY;
-  if (!apiKey) throw new Error("ASAAS_API_KEY not configured.");
+  
+  if (!apiKey) {
+    console.error('ASAAS_API_KEY is missing from process.env');
+    throw new Error("ASAAS_API_KEY not configured. Please check your .env file and restart the server.");
+  }
+  
+  console.log('Asaas Customer - API Key Check:', { 
+    prefix: apiKey.substring(0, 5), 
+    length: apiKey.length 
+  });
 
   // Strip formatting from cpfCnpj and phone (remove dots, dashes, slashes, spaces, parens)
   const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
@@ -66,6 +75,12 @@ export async function createAsaasCustomer(name: string, email: string, phone: st
 export async function createCheckout(orderId: string, customerId: string, value: number, description: string): Promise<string | null> {
   const apiKey = process.env.ASAAS_API_KEY;
   if (!apiKey) throw new Error("ASAAS_API_KEY not configured.");
+  
+  console.log('Asaas API Key Check:', { 
+    prefix: apiKey.substring(0, 5), 
+    length: apiKey.length,
+    isExpanded: apiKey.includes('$') && apiKey.length > 10 
+  });
 
   const dueDate = new Date();
   dueDate.setDate(dueDate.getDate() + 1); // 1 day to expire
@@ -73,26 +88,37 @@ export async function createCheckout(orderId: string, customerId: string, value:
   try {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
+    const paymentBody: any = {
+      customer: customerId,
+      billingType: 'UNDEFINED',
+      billingTypes: ['CREDIT_CARD', 'DEBIT_CARD'],
+      value,
+      dueDate: dueDate.toISOString().split('T')[0],
+      description,
+      externalReference: orderId,
+    };
+
+    // Asaas requires HTTPS for callbacks. If localhost/HTTP, we omit to prevent API error 400.
+    if (appUrl.startsWith('https')) {
+      paymentBody.callback = {
+        successUrl: `${appUrl}/checkout/confirmacao?orderId=${orderId}`,
+        autoRedirect: true,
+      };
+    } else {
+      console.warn('Asaas: Skipping successUrl callback because NEXT_PUBLIC_APP_URL is not HTTPS. Redirect will not work on localhost.');
+    }
+
     const res = await fetch(`${ASAAS_API_URL}/payments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'access_token': apiKey,
       },
-      body: JSON.stringify({
-        customer: customerId,
-        billingType: 'UNDEFINED',
-        value,
-        dueDate: dueDate.toISOString().split('T')[0],
-        description,
-        externalReference: orderId,
-        callback: {
-          successUrl: `${appUrl}/checkout/confirmacao?orderId=${orderId}`,
-        }
-      }),
+      body: JSON.stringify(paymentBody),
     });
 
     const data = await res.json();
+    console.log('Asaas Payment Response:', { status: res.status, data });
     if (!res.ok) {
       console.error('Error creating Asaas payment:', data);
       throw new Error(`Asaas Payment Error: ${JSON.stringify(data)}`);

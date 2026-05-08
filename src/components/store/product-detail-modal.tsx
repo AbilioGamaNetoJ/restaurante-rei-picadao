@@ -97,6 +97,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
       subtotal: parseFloat(product.price) * quantity + addonsToCart.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0),
     });
 
+    useCartStore.getState().setDrawerOpen(true);
     toast.success(`${product.name} adicionado ao carrinho!`);
     onClose();
     // Reset state

@@ -41,6 +41,8 @@ export interface CheckoutData {
 interface CartState {
   items: CartItem[];
   checkoutData: CheckoutData | null;
+  isDrawerOpen: boolean;
+  setDrawerOpen: (open: boolean) => void;
   addItem: (item: CartItem) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -54,6 +56,8 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       checkoutData: null,
+      isDrawerOpen: false,
+      setDrawerOpen: (open) => set({ isDrawerOpen: open }),
       addItem: (item) => set((state) => ({ items: [...state.items, item] })),
       removeItem: (id) =>
         set((state) => ({

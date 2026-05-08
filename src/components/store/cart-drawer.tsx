@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 
 export function CartDrawer({ trigger }: { trigger?: React.ReactElement }) {
   const [mounted, setMounted] = useState(false);
-  const { items, removeItem, updateQuantity, getTotal } = useCartStore();
+  const { items, removeItem, updateQuantity, getTotal, isDrawerOpen, setDrawerOpen } = useCartStore();
 
   useEffect(() => {
     setMounted(true);
@@ -43,8 +43,8 @@ export function CartDrawer({ trigger }: { trigger?: React.ReactElement }) {
 
 
   return (
-    <Sheet>
-      <SheetTrigger render={trigger || defaultTrigger} nativeButton={true} />
+    <Sheet open={isDrawerOpen} onOpenChange={setDrawerOpen}>
+      <SheetTrigger render={trigger || defaultTrigger} nativeButton={true} onClick={() => setDrawerOpen(true)} />
       <SheetContent className="w-full sm:max-w-md flex flex-col h-full">
         <SheetHeader>
           <SheetTitle>Seu Carrinho</SheetTitle>
@@ -146,7 +146,13 @@ export function CartDrawer({ trigger }: { trigger?: React.ReactElement }) {
               </span>
             </div>
             <SheetFooter>
-              <Button render={<Link href="/checkout/endereco" />} className="w-full" size="lg" nativeButton={false}>
+              <Button 
+                render={<Link href="/checkout/endereco" />} 
+                className="w-full" 
+                size="lg" 
+                nativeButton={false}
+                onClick={() => setDrawerOpen(false)}
+              >
                 Avançar para o Checkout
               </Button>
             </SheetFooter>

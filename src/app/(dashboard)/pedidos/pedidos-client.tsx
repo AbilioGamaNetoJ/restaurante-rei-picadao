@@ -24,7 +24,7 @@ const statusMap: Record<OrderStatus, { label: string; color: string; next?: { st
 };
 
 const tabs: { value: string; label: string; statuses: OrderStatus[] }[] = [
-  { value: 'active', label: 'Ativos', statuses: ['paid', 'preparing', 'ready', 'delivering'] },
+  { value: 'active', label: 'Ativos', statuses: ['pending', 'paid', 'preparing', 'ready', 'delivering'] },
   { value: 'completed', label: 'Finalizados', statuses: ['delivered'] },
   { value: 'cancelled', label: 'Cancelados', statuses: ['cancelled'] },
 ];

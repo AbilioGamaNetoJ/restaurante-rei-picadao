@@ -50,6 +50,13 @@ export async function POST(req: Request) {
     });
 
     if (activeOrder) {
+      if (activeOrder.status === 'pending' && activeOrder.asaasCheckoutUrl) {
+        return NextResponse.json({ 
+          checkoutUrl: activeOrder.asaasCheckoutUrl,
+          message: 'Você já possui um pedido aguardando pagamento. Redirecionando...' 
+        });
+      }
+
       return NextResponse.json({ 
         error: 'Você já possui um pedido em andamento. Aguarde a conclusão ou cancelamento para realizar outro.' 
       }, { status: 400 });
