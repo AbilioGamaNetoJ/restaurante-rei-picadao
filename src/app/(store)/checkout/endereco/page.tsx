@@ -19,6 +19,7 @@ export default function EnderecoPage() {
     customerName: '',
     customerEmail: '',
     customerPhone: '',
+    customerCpfCnpj: '',
     addressZip: '',
     addressStreet: '',
     addressNumber: '',
@@ -140,6 +141,33 @@ export default function EnderecoPage() {
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="customerEmail">E-mail</Label>
               <Input required type="email" id="customerEmail" name="customerEmail" value={formData.customerEmail} onChange={handleChange} />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="customerCpfCnpj">CPF ou CNPJ</Label>
+              <Input
+                required
+                id="customerCpfCnpj"
+                name="customerCpfCnpj"
+                value={formData.customerCpfCnpj}
+                onChange={(e) => {
+                  let v = e.target.value.replace(/\D/g, '');
+                  if (v.length <= 11) {
+                    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+                    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+                    v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                  } else {
+                    v = v.slice(0, 14);
+                    v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+                    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+                    v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+                    v = v.replace(/(\d{4})(\d)/, '$1-$2');
+                  }
+                  setFormData({ ...formData, customerCpfCnpj: v });
+                }}
+                placeholder="000.000.000-00"
+                maxLength={18}
+              />
             </div>
           </div>
         </div>

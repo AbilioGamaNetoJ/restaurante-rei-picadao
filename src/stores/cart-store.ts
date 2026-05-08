@@ -24,6 +24,7 @@ export interface CheckoutData {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  customerCpfCnpj: string;
   addressStreet: string;
   addressNumber: string;
   addressComplement?: string;

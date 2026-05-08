@@ -17,65 +17,63 @@ export async function POST(req: Request) {
     const customer = await createAsaasCustomer(
       checkoutData.customerName,
       checkoutData.customerEmail,
-      checkoutData.customerPhone
+      checkoutData.customerPhone,
+      checkoutData.customerCpfCnpj
     );
 
     if (!customer) {
       return NextResponse.json({ error: 'Erro ao registrar cliente no gateway de pagamento.' }, { status: 500 });
     }
 
-    // 2. Start Database Transaction to save order
-    const newOrder = await db.transaction(async (tx) => {
-      // Insert Order
-      const [insertedOrder] = await tx.insert(orders).values({
-        customerName: checkoutData.customerName,
-        customerEmail: checkoutData.customerEmail,
-        customerPhone: checkoutData.customerPhone,
-        addressStreet: checkoutData.addressStreet,
-        addressNumber: checkoutData.addressNumber,
-        addressComplement: checkoutData.addressComplement,
-        addressNeighborhood: checkoutData.addressNeighborhood,
-        addressCity: checkoutData.addressCity,
-        addressState: checkoutData.addressState,
-        addressZip: checkoutData.addressZip,
-        distanceKm: (checkoutData.distanceKm ?? 0).toString(),
-        deliveryFee: (deliveryFee ?? 0).toString(),
-        subtotal: (subtotal ?? 0).toString(),
-        total: (total ?? 0).toString(),
-        status: 'pending',
-      }).returning({ id: orders.id });
+    // 2. Save order to database (neon-http does not support transactions)
+    const [insertedOrder] = await db.insert(orders).values({
+      customerName: checkoutData.customerName,
+      customerEmail: checkoutData.customerEmail,
+      customerPhone: checkoutData.customerPhone,
+      addressStreet: checkoutData.addressStreet,
+      addressNumber: checkoutData.addressNumber,
+      addressComplement: checkoutData.addressComplement,
+      addressNeighborhood: checkoutData.addressNeighborhood,
+      addressCity: checkoutData.addressCity,
+      addressState: checkoutData.addressState,
+      addressZip: checkoutData.addressZip,
+      distanceKm: (checkoutData.distanceKm ?? 0).toString(),
+      deliveryFee: (deliveryFee ?? 0).toString(),
+      subtotal: (subtotal ?? 0).toString(),
+      total: (total ?? 0).toString(),
+      status: 'pending',
+    }).returning({ id: orders.id });
 
-      const orderId = insertedOrder.id;
+    const orderId = insertedOrder.id;
 
-      // Insert Items and Addons
-      for (const item of items) {
-        const [insertedItem] = await tx.insert(orderItems).values({
-          orderId,
-          productId: item.productId,
-          productName: item.name,
-          productPrice: item.price.toString(),
-          quantity: item.quantity,
-          comment: item.comment,
-          subtotal: item.subtotal.toString(),
-        }).returning({ id: orderItems.id });
+    // Insert Items and Addons
+    for (const item of items) {
+      const [insertedItem] = await db.insert(orderItems).values({
+        orderId,
+        productId: item.productId,
+        productName: item.name,
+        productPrice: item.price.toString(),
+        quantity: item.quantity,
+        comment: item.comment,
+        subtotal: item.subtotal.toString(),
+      }).returning({ id: orderItems.id });
 
-        const orderItemId = insertedItem.id;
+      const orderItemId = insertedItem.id;
 
-        if (item.addons && item.addons.length > 0) {
-          const addonsToInsert = item.addons.map((addon: any) => ({
-            orderItemId,
-            addonId: addon.id,
-            addonName: addon.name,
-            addonPrice: addon.price.toString(),
-            quantity: addon.quantity,
-          }));
-          
-          await tx.insert(orderItemAddons).values(addonsToInsert);
-        }
+      if (item.addons && item.addons.length > 0) {
+        const addonsToInsert = item.addons.map((addon: any) => ({
+          orderItemId,
+          addonId: addon.id,
+          addonName: addon.name,
+          addonPrice: addon.price.toString(),
+          quantity: addon.quantity,
+        }));
+        
+        await db.insert(orderItemAddons).values(addonsToInsert);
       }
+    }
 
-      return insertedOrder;
-    });
+    const newOrder = insertedOrder;
 
     // 3. Create Checkout Link in Asaas
     const description = `Pedido #${newOrder.id.split('-')[0].toUpperCase()} - Rei do Picadão`;

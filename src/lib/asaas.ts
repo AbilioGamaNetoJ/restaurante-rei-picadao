@@ -6,9 +6,12 @@ interface AsaasCustomer {
   id: string;
 }
 
-export async function createAsaasCustomer(name: string, email: string, phone: string): Promise<AsaasCustomer | null> {
+export async function createAsaasCustomer(name: string, email: string, phone: string, cpfCnpj: string): Promise<AsaasCustomer | null> {
   const apiKey = process.env.ASAAS_API_KEY;
   if (!apiKey) throw new Error("ASAAS_API_KEY not configured.");
+
+  // Strip formatting from cpfCnpj (remove dots, dashes, slashes)
+  const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
 
   try {
     // First, check if customer exists
@@ -36,6 +39,7 @@ export async function createAsaasCustomer(name: string, email: string, phone: st
         name,
         email,
         phone,
+        cpfCnpj: cleanCpfCnpj,
       }),
     });
 
