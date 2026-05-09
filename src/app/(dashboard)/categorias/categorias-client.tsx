@@ -75,7 +75,7 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
         <Input placeholder="Buscar categorias..." className="max-w-sm" />
         
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger render={
+          <DialogTrigger nativeButton={true} render={
             <button 
               onClick={handleOpenNew}
               className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"

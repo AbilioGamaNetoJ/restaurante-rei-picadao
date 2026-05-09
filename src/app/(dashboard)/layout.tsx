@@ -119,7 +119,7 @@ export default async function DashboardLayout({
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet>
-            <SheetTrigger render={
+            <SheetTrigger nativeButton={true} render={
               <button
                 className="shrink-0 md:hidden inline-flex items-center justify-center rounded-lg border border-border bg-background h-8 w-8 hover:bg-muted hover:text-foreground"
               >
