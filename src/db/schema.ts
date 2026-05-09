@@ -193,6 +193,7 @@ export const orderItemAddons = pgTable('order_item_addons', {
   addonName: text('addon_name').notNull(),
   addonPrice: numeric('addon_price', { precision: 10, scale: 2 }).notNull(),
   quantity: integer('quantity').notNull(),
+  imageUrl: text('image_url'),
 });
 
 export const orderItemAddonsRelations = relations(orderItemAddons, ({ one }) => ({

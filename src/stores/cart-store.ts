@@ -6,6 +6,7 @@ export interface CartItemAddon {
   name: string;
   price: number;
   quantity: number;
+  imageUrl?: string | null;
 }
 
 export interface CartItem {

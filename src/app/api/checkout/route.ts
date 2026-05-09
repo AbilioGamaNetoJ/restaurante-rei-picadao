@@ -132,6 +132,7 @@ export async function POST(req: Request) {
           addonName: addon.name,
           addonPrice: addon.price.toString(),
           quantity: addon.quantity,
+          imageUrl: addon.imageUrl,
         }));
         
         await db.insert(orderItemAddons).values(addonsToInsert);

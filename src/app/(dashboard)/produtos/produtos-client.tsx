@@ -282,8 +282,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                           {categoryName}
                         </h4>
                         <div className="grid grid-cols-2 gap-2">
-                          {filteredAddons.map(addon => (
-                            <div key={addon.id} className="flex items-center gap-2">
+                            <div key={addon.id} className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm">
                               <input 
                                 type="checkbox" 
                                 id={`addon-${addon.id}`}
@@ -291,18 +290,25 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                                 onChange={() => toggleAddon(addon.id)}
                                 className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                               />
-                              <Label htmlFor={`addon-${addon.id}`} className="font-normal cursor-pointer text-sm">
-                                <div>
-                                  {addon.name} (+R$ {Number(addon.price).toFixed(2)})
+                              <Label htmlFor={`addon-${addon.id}`} className="flex items-center gap-3 font-normal cursor-pointer text-sm w-full">
+                                {addon.imageUrl && (
+                                  <img 
+                                    src={addon.imageUrl} 
+                                    alt={addon.name} 
+                                    className="w-10 h-10 object-cover rounded-md flex-shrink-0" 
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-bold truncate">{addon.name}</div>
+                                  <div className="text-primary font-medium text-xs">(+R$ {Number(addon.price).toFixed(2)})</div>
                                   {addon.description && (
-                                    <span className="block text-[10px] text-muted-foreground leading-tight">
+                                    <span className="block text-[10px] text-muted-foreground leading-tight truncate">
                                       {addon.description}
                                     </span>
                                   )}
                                 </div>
                               </Label>
                             </div>
-                          ))}
                         </div>
                       </div>
                     );

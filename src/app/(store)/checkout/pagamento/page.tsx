@@ -94,13 +94,22 @@ export default function PagamentoPage() {
                   {item.quantity}x {item.name}
                 </p>
                 {item.addons.length > 0 && (
-                  <ul className="text-sm text-muted-foreground mt-1 ml-4 list-disc">
+                  <div className="mt-2 ml-4 space-y-2">
                     {item.addons.map((addon) => (
-                      <li key={addon.id}>
-                        {addon.quantity}x {addon.name} (+ {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(addon.price * addon.quantity)})
-                      </li>
+                      <div key={addon.id} className="flex items-center gap-2">
+                        {addon.imageUrl && (
+                          <img 
+                            src={addon.imageUrl} 
+                            alt={addon.name} 
+                            className="w-8 h-8 rounded object-cover flex-shrink-0" 
+                          />
+                        )}
+                        <span className="text-sm text-muted-foreground">
+                          {addon.quantity}x {addon.name} (+ {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(addon.price * addon.quantity)})
+                        </span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 )}
                 {item.comment && (
                   <p className="text-sm text-muted-foreground mt-1 italic">

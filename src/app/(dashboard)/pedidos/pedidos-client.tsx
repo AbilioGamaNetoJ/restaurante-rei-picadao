@@ -107,9 +107,18 @@ export function PedidosClient({ initialOrders }: { initialOrders: any[] }) {
                           <span>R$ {Number(item.subtotal).toFixed(2)}</span>
                         </div>
                         {item.addons?.length > 0 && (
-                          <div className="pl-4 text-xs text-muted-foreground">
+                          <div className="pl-4 text-xs text-muted-foreground space-y-1 mt-1">
                             {item.addons.map((addon: any) => (
-                              <div key={addon.id}>+ {addon.quantity}x {addon.addonName}</div>
+                              <div key={addon.id} className="flex items-center gap-2">
+                                {addon.imageUrl && (
+                                  <img 
+                                    src={addon.imageUrl} 
+                                    alt={addon.addonName} 
+                                    className="w-6 h-6 rounded object-cover flex-shrink-0 border border-muted" 
+                                  />
+                                )}
+                                <span>+ {addon.quantity}x {addon.addonName}</span>
+                              </div>
                             ))}
                           </div>
                         )}

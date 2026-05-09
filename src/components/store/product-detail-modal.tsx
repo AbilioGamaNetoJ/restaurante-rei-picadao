@@ -23,6 +23,7 @@ export interface Addon {
   name: string;
   price: string;
   category: string;
+  imageUrl: string | null;
 }
 
 export interface Product {
@@ -83,6 +84,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
         name: a.addon.name,
         price: parseFloat(a.addon.price),
         quantity: selectedAddons[a.addon.id],
+        imageUrl: a.addon.imageUrl,
       })) || [];
 
     addItem({
@@ -149,20 +151,29 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
             <div className="space-y-3 mt-4">
               <h4 className="font-medium text-sm">Adicionais</h4>
               {product.addons.map((item) => (
-                <div key={item.addon.id} className="flex items-center justify-between border-b pb-2">
-                  <div>
-                    <p className="text-sm">{item.addon.name}</p>
-                    <p className="text-xs text-gray-500">+ R$ {parseFloat(item.addon.price).toFixed(2)}</p>
+                <div key={item.addon.id} className="flex items-center justify-between border-b pb-2 gap-2">
+                  <div className="flex items-center gap-3">
+                    {item.addon.imageUrl && (
+                      <img 
+                        src={item.addon.imageUrl} 
+                        alt={item.addon.name} 
+                        className="w-12 h-12 object-cover rounded-md flex-shrink-0" 
+                      />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium">{item.addon.name}</p>
+                      <p className="text-xs text-gray-500">+ R$ {parseFloat(item.addon.price).toFixed(2)}</p>
+                    </div>
                   </div>
                   
                   {selectedAddons[item.addon.id] ? (
                     <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => handleAddonQuantityChange(item.addon.id, -1)}>-</Button>
-                      <span className="text-sm">{selectedAddons[item.addon.id]}</span>
-                      <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => handleAddonQuantityChange(item.addon.id, 1)}>+</Button>
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, -1)}>-</Button>
+                      <span className="text-sm font-medium min-w-[20px] text-center">{selectedAddons[item.addon.id]}</span>
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, 1)}>+</Button>
                     </div>
                   ) : (
-                    <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, true)}>
+                    <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, true)} className="h-8">
                       Adicionar
                     </Button>
                   )}

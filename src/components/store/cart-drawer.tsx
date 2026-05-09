@@ -94,10 +94,20 @@ export function CartDrawer({ trigger }: { trigger?: React.ReactElement }) {
                       </div>
                       
                       {item.addons.length > 0 && (
-                        <div className="text-xs text-muted-foreground mt-1">
+                        <div className="space-y-1 mt-2">
                           {item.addons.map(addon => (
-                            <div key={addon.id}>
-                              + {addon.quantity}x {addon.name} (R$ {addon.price.toFixed(2)})
+                            <div key={addon.id} className="flex items-center gap-2">
+                              {addon.imageUrl && (
+                                <img 
+                                  src={addon.imageUrl} 
+                                  alt={addon.name} 
+                                  className="w-8 h-8 rounded object-cover flex-shrink-0" 
+                                />
+                              )}
+                              <div className="text-[11px] text-muted-foreground leading-tight">
+                                <span className="font-medium text-foreground">{addon.quantity}x</span> {addon.name}
+                                <span className="ml-1 text-[10px]">(R$ {addon.price.toFixed(2)})</span>
+                              </div>
                             </div>
                           ))}
                         </div>
