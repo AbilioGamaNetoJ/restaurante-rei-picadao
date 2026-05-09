@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { UploadButton } from '@/lib/uploadthing';
+import { cn } from '@/lib/utils';
+
 
 export function ProdutosClient({ initialProducts, categories, addons }: { initialProducts: any[], categories: any[], addons: any[] }) {
   const [isPending, startTransition] = useTransition();
@@ -281,34 +283,54 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                         <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">
                           {categoryName}
                         </h4>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 gap-3">
                           {filteredAddons.map((addon) => (
-                            <div key={addon.id} className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm">
-                              <input 
-                                type="checkbox" 
-                                id={`addon-${addon.id}`}
-                                checked={formData.addonsIds.includes(addon.id)}
-                                onChange={() => toggleAddon(addon.id)}
-                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                              />
-                              <Label htmlFor={`addon-${addon.id}`} className="flex items-center gap-3 font-normal cursor-pointer text-sm w-full">
-                                {addon.imageUrl && (
+                            <div 
+                              key={addon.id} 
+                              className={cn(
+                                "flex items-center gap-4 p-3 rounded-xl border transition-all duration-200 group cursor-pointer w-full relative",
+                                formData.addonsIds.includes(addon.id)
+                                  ? "bg-primary/[0.04] border-primary shadow-sm ring-1 ring-primary/10"
+                                  : "bg-white dark:bg-slate-800 border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md"
+                              )}
+                              onClick={() => toggleAddon(addon.id)}
+                            >
+                              <div className="flex items-center flex-shrink-0 pl-1">
+                                <input 
+                                  type="checkbox" 
+                                  id={`addon-${addon.id}`}
+                                  checked={formData.addonsIds.includes(addon.id)}
+                                  onChange={() => {}}
+                                  className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer transition-all group-hover:scale-110"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+
+                              {addon.imageUrl && (
+                                <div className="relative w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm">
                                   <img 
                                     src={addon.imageUrl} 
                                     alt={addon.name} 
-                                    className="w-10 h-10 object-cover rounded-md flex-shrink-0" 
+                                    className="w-full h-full object-cover" 
                                   />
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-bold truncate">{addon.name}</div>
-                                  <div className="text-primary font-medium text-xs">(+R$ {Number(addon.price).toFixed(2)})</div>
+                                </div>
+                              )}
+
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <div className="font-bold text-sm text-gray-900 dark:text-gray-100 leading-snug break-words">
+                                  {addon.name}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-primary font-bold text-xs">
+                                    + R$ {Number(addon.price).toFixed(2)}
+                                  </span>
                                   {addon.description && (
-                                    <span className="block text-[10px] text-muted-foreground leading-tight truncate">
-                                      {addon.description}
+                                    <span className="text-[10px] text-gray-400 font-medium truncate italic">
+                                      • {addon.description}
                                     </span>
                                   )}
                                 </div>
-                              </Label>
+                              </div>
                             </div>
                           ))}
                         </div>
