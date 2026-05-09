@@ -282,6 +282,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                           {categoryName}
                         </h4>
                         <div className="grid grid-cols-2 gap-2">
+                          {filteredAddons.map((addon) => (
                             <div key={addon.id} className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm">
                               <input 
                                 type="checkbox" 
@@ -309,6 +310,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                                 </div>
                               </Label>
                             </div>
+                          ))}
                         </div>
                       </div>
                     );

@@ -43,7 +43,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
 
   const [activeCategory, setActiveCategory] = useState<string>(displayCategories[0]?.id || "");
   
-  const categoryRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const categoryRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   useEffect(() => {
     setMounted(true);
