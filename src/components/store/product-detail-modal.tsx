@@ -51,13 +51,15 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
 
   if (!product) return null;
 
+  const isSauceCategory = (name: string) => ['Molho Extra', 'Molhos Extras', 'Molhos', 'Molho Grande'].includes(name);
+
   const handleAddonToggle = (addonId: string, checked: boolean, catName: string) => {
-    if (catName === 'Molhos Extras' && checked) {
+    if (isSauceCategory(catName) && checked) {
       setSelectedAddons(prev => {
         const next: Record<string, number> = {};
         for (const [id, qty] of Object.entries(prev)) {
           const a = product.addons?.find(pa => pa.addon.id === id);
-          if (a && a.addon.category?.name !== 'Molhos Extras') {
+          if (a && !isSauceCategory(a.addon.category?.name || '')) {
             next[id] = qty;
           }
         }
@@ -104,7 +106,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
       }
 
       const a = product.addons?.find(pa => pa.addon.id === addonId);
-      if (a?.addon.category?.name === 'Molhos Extras') {
+      if (a && isSauceCategory(a.addon.category?.name || '')) {
         return prev;
       }
       if (a?.addon.category?.name === 'Bebidas') {
@@ -241,7 +243,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                           </div>
                         </div>
                         
-                        {catName === 'Molhos Extras' ? (
+                        {isSauceCategory(catName) ? (
                           selectedAddons[item.addon.id] ? (
                             <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, false, catName)} className="h-8">
                               Remover

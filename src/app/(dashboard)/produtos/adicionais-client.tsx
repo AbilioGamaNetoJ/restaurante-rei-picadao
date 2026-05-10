@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { createAddon, updateAddon, deleteAddon } from './adicionais-actions';
-import { createCategory } from '@/app/(dashboard)/categorias/actions';
+import { createCategory, deleteCategory } from '@/app/(dashboard)/categorias/actions';
 import { Plus, Trash2, Edit2, Check, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import Image from 'next/image';
@@ -72,6 +72,22 @@ export function AdicionaisClient({ addons, categories }: { addons: any[], catego
         setIsAddingCategory(false);
       } catch (error) {
         toast.error('Erro ao criar categoria');
+      }
+    });
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm('Excluir esta categoria? Os adicionais nela ficarão sem categoria.')) return;
+    
+    startTransition(async () => {
+      try {
+        await deleteCategory(id);
+        toast.success('Categoria excluída');
+        if (formData.categoryId === id) {
+          setFormData({ ...formData, categoryId: '' });
+        }
+      } catch (error) {
+        toast.error('Erro ao excluir categoria');
       }
     });
   };
@@ -177,18 +193,37 @@ export function AdicionaisClient({ addons, categories }: { addons: any[], catego
                       </Button>
                     </div>
                   ) : (
-                    <select 
-                      id="categoryId"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                      value={formData.categoryId}
-                      onChange={(e) => setFormData({...formData, categoryId: e.target.value})}
-                      required
-                    >
-                      <option value="" disabled>Selecione...</option>
-                      {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
+                    <div className="space-y-1 max-h-[120px] overflow-y-auto border rounded-md p-1 bg-slate-50/50">
+                      {categories.length === 0 ? (
+                        <div className="text-[10px] text-muted-foreground p-2 text-center italic">Nenhuma categoria</div>
+                      ) : (
+                        categories.map(cat => (
+                          <div 
+                            key={cat.id} 
+                            className={`group flex items-center justify-between px-2 py-1.5 rounded-md cursor-pointer transition-colors ${
+                              formData.categoryId === cat.id 
+                                ? 'bg-primary text-primary-foreground' 
+                                : 'hover:bg-slate-200 text-slate-700'
+                            }`}
+                            onClick={() => setFormData({...formData, categoryId: cat.id})}
+                          >
+                            <span className="text-xs font-medium">{cat.name}</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCategory(cat.id);
+                              }}
+                              className={`p-0.5 rounded-full hover:bg-black/10 transition-colors ${
+                                formData.categoryId === cat.id ? 'text-primary-foreground' : 'text-slate-400'
+                              }`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
