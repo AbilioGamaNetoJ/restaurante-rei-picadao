@@ -109,8 +109,8 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
     <div className="flex flex-col gap-8 pb-24">
       {mounted && <ClosedStoreDialog isOpenStatus={openStatus} />}
       
-      {/* Hero Banner Section */}
-      <div className="relative w-full h-[220px] md:h-[350px] -mt-8 -mx-4 container-none overflow-hidden group">
+      {/* Hero Banner Section (Truly Full Width) */}
+      <div className="relative w-full h-[280px] md:h-[450px] -mt-8 overflow-hidden group">
         {settings?.bannerUrl ? (
           <img 
             src={settings.bannerUrl} 
@@ -124,7 +124,8 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
       </div>
 
       {/* Store Info Card (Floating Premium) */}
-      <div className="relative -mt-24 md:-mt-32 z-10 bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white/50 p-6 md:p-10 flex flex-col md:flex-row items-center md:items-start gap-8 max-w-5xl mx-auto w-full mx-auto ring-1 ring-black/5 transition-all duration-500 hover:shadow-[0_30px_70px_rgba(0,0,0,0.15)]">
+      {/* Store Info Card (Floating Premium) */}
+      <div className="relative -mt-20 md:-mt-32 z-10 bg-white/90 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-white/50 p-6 md:p-10 flex flex-col md:flex-row items-center md:items-start gap-8 max-w-5xl w-[calc(100%-2rem)] mx-auto ring-1 ring-black/5 transition-all duration-500 hover:shadow-[0_30px_70px_rgba(0,0,0,0.18)]">
         {/* Logo */}
         <div className="w-28 h-28 md:w-40 md:h-40 rounded-full border-8 border-white bg-white shadow-2xl overflow-hidden flex-shrink-0 -mt-20 md:-mt-24 transition-transform duration-500 hover:scale-105">
           {settings?.logoUrl ? (
@@ -191,7 +192,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
       </div>
 
       {/* Sticky Category ScrollBar (Premium Glass) */}
-      <div className="sticky top-[64px] z-40 w-full bg-white/80 backdrop-blur-xl border-b -mx-4 px-4 py-3 shadow-sm">
+      <div className="sticky top-[64px] z-40 w-full bg-white/80 backdrop-blur-xl border-b py-3 shadow-sm">
         <ScrollArea className="w-full whitespace-nowrap">
           <div className="flex w-max space-x-3 p-1">
             {displayCategories.map((category) => (
@@ -220,7 +221,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
           <section 
             id="featured"
             ref={(el) => { categoryRefs.current['featured'] = el; }}
-            className="scroll-mt-40 px-2"
+            className="scroll-mt-40 px-4 md:px-8"
           >
             <div className="flex flex-col gap-1 mb-8">
               <div className="flex items-center gap-4">
@@ -268,7 +269,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
               key={category.id} 
               id={category.id}
               ref={(el) => { categoryRefs.current[category.id] = el; }}
-              className="scroll-mt-40 px-2"
+              className="scroll-mt-40 px-4 md:px-8"
             >
               <div className="flex flex-col gap-1 mb-8">
                 <div className="flex items-center gap-4">

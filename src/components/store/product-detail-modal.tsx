@@ -51,11 +51,41 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
 
   if (!product) return null;
 
-  const handleAddonToggle = (addonId: string, checked: boolean) => {
+  const handleAddonToggle = (addonId: string, checked: boolean, catName: string) => {
+    if (catName === 'Molhos Extras' && checked) {
+      setSelectedAddons(prev => {
+        const next: Record<string, number> = {};
+        for (const [id, qty] of Object.entries(prev)) {
+          const a = product.addons?.find(pa => pa.addon.id === id);
+          if (a && a.addon.category?.name !== 'Molhos Extras') {
+            next[id] = qty;
+          }
+        }
+        next[addonId] = 1;
+        return next;
+      });
+      return;
+    }
+
+    if (catName === 'Bebidas' && checked) {
+      setSelectedAddons(prev => {
+        const next: Record<string, number> = {};
+        for (const [id, qty] of Object.entries(prev)) {
+          const a = product.addons?.find(pa => pa.addon.id === id);
+          if (a && a.addon.category?.name !== 'Bebidas') {
+            next[id] = qty;
+          }
+        }
+        next[addonId] = 1;
+        return next;
+      });
+      return;
+    }
+
     setSelectedAddons(prev => {
       const next = { ...prev };
       if (checked) {
-        next[addonId] = 1; // default quantity 1 for selected addon
+        next[addonId] = 1;
       } else {
         delete next[addonId];
       }
@@ -72,6 +102,20 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
         delete next[addonId];
         return next;
       }
+
+      const a = product.addons?.find(pa => pa.addon.id === addonId);
+      if (a?.addon.category?.name === 'Molhos Extras') {
+        return prev;
+      }
+      if (a?.addon.category?.name === 'Bebidas') {
+        const otherBebidasTotal = Object.entries(prev).reduce((sum, [id, qty]) => {
+          if (id === addonId) return sum;
+          const item = product.addons?.find(pa => pa.addon.id === id);
+          return sum + (item?.addon.category?.name === 'Bebidas' ? qty : 0);
+        }, 0);
+        if (otherBebidasTotal + nextVal > 2) return prev;
+      }
+
       return { ...prev, [addonId]: nextVal };
     });
   };
@@ -79,13 +123,17 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
   const handleAddToCart = () => {
     const addonsToCart = product.addons
       ?.filter(a => selectedAddons[a.addon.id])
-      .map(a => ({
-        id: a.addon.id,
-        name: a.addon.name,
-        price: parseFloat(a.addon.price),
-        quantity: selectedAddons[a.addon.id],
-        imageUrl: a.addon.imageUrl,
-      })) || [];
+      .map(a => {
+        const price = parseFloat(a.addon.price);
+        const multiplier = (a.addon.category?.name === 'Bebidas' && isBebidasDouble) ? 2 : 1;
+        return {
+          id: a.addon.id,
+          name: a.addon.name,
+          price: price * multiplier,
+          quantity: selectedAddons[a.addon.id],
+          imageUrl: a.addon.imageUrl,
+        };
+      }) || [];
 
     addItem({
       id: crypto.randomUUID(),
@@ -108,10 +156,20 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
     setSelectedAddons({});
   };
 
+  const bebidasTotalQty = product.addons?.reduce((acc, a) => {
+    if (a.addon.category?.name === 'Bebidas') {
+      return acc + (selectedAddons[a.addon.id] || 0);
+    }
+    return acc;
+  }, 0) || 0;
+  const isBebidasDouble = bebidasTotalQty >= 2;
+
   const productPrice = parseFloat(product.price);
   const addonsTotal = product.addons?.reduce((acc, a) => {
     const q = selectedAddons[a.addon.id] || 0;
-    return acc + (parseFloat(a.addon.price) * q);
+    const price = parseFloat(a.addon.price);
+    const multiplier = (a.addon.category?.name === 'Bebidas' && isBebidasDouble) ? 2 : 1;
+    return acc + (price * multiplier * q);
   }, 0) || 0;
   
   const total = (productPrice + addonsTotal) * quantity;
@@ -165,7 +223,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                         </svg>
                         <span className="font-bold text-sm text-gray-800">{catName}</span>
                       </div>
-                      <span className="text-xs text-gray-400">Escolha até {addons.length} opção{addons.length > 1 ? 'ões' : ''}</span>
+                      <span className="text-xs text-gray-400">Escolha uma opção</span>
                     </div>
                     {addons.map((item) => (
                       <div key={item.addon.id} className="flex items-center justify-between border-b pb-2 gap-2">
@@ -183,14 +241,24 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                           </div>
                         </div>
                         
-                        {selectedAddons[item.addon.id] ? (
+                        {catName === 'Molhos Extras' ? (
+                          selectedAddons[item.addon.id] ? (
+                            <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, false, catName)} className="h-8">
+                              Remover
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, true, catName)} className="h-8">
+                              Adicionar
+                            </Button>
+                          )
+                        ) : selectedAddons[item.addon.id] ? (
                           <div className="flex items-center space-x-2">
                             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, -1)}>-</Button>
                             <span className="text-sm font-medium min-w-[20px] text-center">{selectedAddons[item.addon.id]}</span>
                             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, 1)}>+</Button>
                           </div>
                         ) : (
-                          <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, true)} className="h-8">
+                          <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, true, catName)} className="h-8">
                             Adicionar
                           </Button>
                         )}
