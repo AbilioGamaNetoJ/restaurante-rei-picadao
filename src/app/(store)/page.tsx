@@ -31,7 +31,11 @@ export default async function StorePage() {
       categories: true,
       addons: {
         with: {
-          addon: true
+          addon: {
+            with: {
+              category: true
+            }
+          }
         }
       }
     }

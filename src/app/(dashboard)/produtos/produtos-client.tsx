@@ -300,9 +300,8 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                                   type="checkbox" 
                                   id={`addon-${addon.id}`}
                                   checked={formData.addonsIds.includes(addon.id)}
-                                  onChange={() => {}}
-                                  className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer transition-all group-hover:scale-110"
-                                  onClick={(e) => e.stopPropagation()}
+                                  readOnly
+                                  className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer transition-all group-hover:scale-110 pointer-events-none"
                                 />
                               </div>
 

@@ -27,3 +27,17 @@ export async function updateOrderStatus(orderId: string, newStatus: string) {
 
   revalidatePath('/pedidos');
 }
+
+export async function deleteOrder(orderId: string) {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    throw new Error('Não autorizado');
+  }
+
+  await db
+    .delete(orders)
+    .where(eq(orders.id, orderId));
+
+  revalidatePath('/pedidos');
+}

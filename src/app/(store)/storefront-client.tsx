@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { CartDrawer } from "@/components/store/cart-drawer";
 import { useCartStore } from "@/stores/cart-store";
 import { cn } from "@/lib/utils";
+import { MapPin } from "lucide-react";
 import { 
   ShoppingCart, 
   Clock, 
@@ -169,9 +170,15 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
               <div className="bg-purple-50 p-1.5 rounded-lg">
                 <Bike className="h-4 w-4 text-purple-500" />
               </div>
-              <span className="text-gray-900 font-bold">R$ {parseFloat(settings?.deliveryFeeKm || "1.50").toFixed(2)}</span>
-              <span className="opacity-60">/ km</span>
+              <span className="text-gray-900 font-bold">Não entregamos acima de {settings?.deliveryRadiusKm || "10"} km de distância da loja</span>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-gray-500 font-medium justify-center md:justify-start">
+            <div className="bg-orange-50 p-1.5 rounded-lg">
+              <MapPin className="h-4 w-4 text-orange-500" />
+            </div>
+            <span className="text-gray-900 font-bold">{settings?.address || "Endereço não informado"}</span>
           </div>
 
           <div className="pt-4 flex items-center justify-center md:justify-start">

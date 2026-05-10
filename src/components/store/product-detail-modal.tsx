@@ -22,7 +22,7 @@ export interface Addon {
   id: string;
   name: string;
   price: string;
-  category: string;
+  category: { id: string; name: string } | null;
   imageUrl: string | null;
 }
 
@@ -148,37 +148,57 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
 
           {/* Addons Section */}
           {product.addons && product.addons.length > 0 && (
-            <div className="space-y-3 mt-4">
-              <h4 className="font-medium text-sm">Adicionais</h4>
-              {product.addons.map((item) => (
-                <div key={item.addon.id} className="flex items-center justify-between border-b pb-2 gap-2">
-                  <div className="flex items-center gap-3">
-                    {item.addon.imageUrl && (
-                      <img 
-                        src={item.addon.imageUrl} 
-                        alt={item.addon.name} 
-                        className="w-12 h-12 object-cover rounded-md flex-shrink-0" 
-                      />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium">{item.addon.name}</p>
-                      <p className="text-xs text-gray-500">+ R$ {parseFloat(item.addon.price).toFixed(2)}</p>
+            <div className="space-y-4 mt-4">
+              {(() => {
+                const grouped = product.addons.reduce<Record<string, typeof product.addons>>((acc, item) => {
+                  const catName = item.addon.category?.name || 'Adicionais';
+                  if (!acc[catName]) acc[catName] = [];
+                  acc[catName].push(item);
+                  return acc;
+                }, {});
+                return Object.entries(grouped).map(([catName, addons]) => (
+                  <div key={catName} className="space-y-2">
+                    <div className="flex items-center justify-between bg-gray-100 rounded-lg px-4 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <svg className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="font-bold text-sm text-gray-800">{catName}</span>
+                      </div>
+                      <span className="text-xs text-gray-400">Escolha até {addons.length} opção{addons.length > 1 ? 'ões' : ''}</span>
                     </div>
+                    {addons.map((item) => (
+                      <div key={item.addon.id} className="flex items-center justify-between border-b pb-2 gap-2">
+                        <div className="flex items-center gap-3">
+                          {item.addon.imageUrl && (
+                            <img 
+                              src={item.addon.imageUrl} 
+                              alt={item.addon.name} 
+                              className="w-12 h-12 object-cover rounded-md flex-shrink-0" 
+                            />
+                          )}
+                          <div>
+                            <p className="text-sm font-medium">{item.addon.name}</p>
+                            <p className="text-xs text-gray-500">+ R$ {parseFloat(item.addon.price).toFixed(2)}</p>
+                          </div>
+                        </div>
+                        
+                        {selectedAddons[item.addon.id] ? (
+                          <div className="flex items-center space-x-2">
+                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, -1)}>-</Button>
+                            <span className="text-sm font-medium min-w-[20px] text-center">{selectedAddons[item.addon.id]}</span>
+                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, 1)}>+</Button>
+                          </div>
+                        ) : (
+                          <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, true)} className="h-8">
+                            Adicionar
+                          </Button>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  
-                  {selectedAddons[item.addon.id] ? (
-                    <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, -1)}>-</Button>
-                      <span className="text-sm font-medium min-w-[20px] text-center">{selectedAddons[item.addon.id]}</span>
-                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, 1)}>+</Button>
-                    </div>
-                  ) : (
-                    <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, true)} className="h-8">
-                      Adicionar
-                    </Button>
-                  )}
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           )}
 
