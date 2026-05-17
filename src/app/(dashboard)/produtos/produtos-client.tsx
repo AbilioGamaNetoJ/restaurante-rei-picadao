@@ -14,6 +14,42 @@ import Image from 'next/image';
 import { UploadButton } from '@/lib/uploadthing';
 import { cn } from '@/lib/utils';
 
+// Helper functions for price formatting
+const toDisplayPrice = (val: any) => {
+  if (val === null || val === undefined) return '';
+  const str = String(val);
+  return str.replace(/\./g, ',');
+};
+
+const toBackendPrice = (val: string) => {
+  if (!val) return '';
+  return val.replace(/,/g, '.');
+};
+
+const sanitizeAndFormatPrice = (value: string) => {
+  let clean = value.replace(/R\$\s*/gi, '');
+  const lastCommaIndex = clean.lastIndexOf(',');
+  const lastDotIndex = clean.lastIndexOf('.');
+  
+  if (lastCommaIndex !== -1 && lastDotIndex !== -1) {
+    if (lastCommaIndex > lastDotIndex) {
+      clean = clean.replace(/\./g, '');
+    } else {
+      clean = clean.replace(/,/g, '').replace(/\./g, ',');
+    }
+  } else if (lastCommaIndex === -1 && lastDotIndex !== -1) {
+    clean = clean.replace(/\./g, ',');
+  }
+  
+  clean = clean.replace(/[^0-9,]/g, '');
+  
+  const parts = clean.split(',');
+  if (parts.length > 2) {
+    clean = parts[0] + ',' + parts.slice(1).join('');
+  }
+  
+  return clean;
+};
 
 export function ProdutosClient({ initialProducts, categories, addons }: { initialProducts: any[], categories: any[], addons: any[] }) {
   const [isPending, startTransition] = useTransition();
@@ -28,7 +64,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
     costPrice: '',
     imageUrl: '',
     isAvailable: true,
-    sortOrder: 0,
+    sortOrder: '0' as string | number,
     addonsIds: [] as string[],
     servesPeople: '' as string | number,
     originalPrice: '',
@@ -39,7 +75,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
     setEditingId(null);
     setFormData({ 
       name: '', categoryIds: [], description: '', 
-      price: '', costPrice: '', imageUrl: '', isAvailable: true, sortOrder: 0, addonsIds: [],
+      price: '', costPrice: '', imageUrl: '', isAvailable: true, sortOrder: '0', addonsIds: [],
       servesPeople: '', originalPrice: '', isFeatured: false
     });
     setIsOpen(true);
@@ -51,14 +87,14 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
       name: product.name,
       categoryIds: product.categories.map((c: any) => c.categoryId),
       description: product.description || '',
-      price: product.price,
-      costPrice: product.costPrice || '',
+      price: toDisplayPrice(product.price),
+      costPrice: toDisplayPrice(product.costPrice),
       imageUrl: product.imageUrl || '',
       isAvailable: product.isAvailable,
-      sortOrder: product.sortOrder,
+      sortOrder: product.sortOrder !== null && product.sortOrder !== undefined ? String(product.sortOrder) : '0',
       addonsIds: product.addons.map((a: any) => a.addonId),
       servesPeople: product.servesPeople || '',
-      originalPrice: product.originalPrice || '',
+      originalPrice: toDisplayPrice(product.originalPrice),
       isFeatured: product.isFeatured || false
     });
     setIsOpen(true);
@@ -73,19 +109,20 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
 
     startTransition(async () => {
       try {
+        const payload = {
+          ...formData,
+          price: toBackendPrice(formData.price),
+          costPrice: toBackendPrice(formData.costPrice),
+          originalPrice: formData.originalPrice ? toBackendPrice(formData.originalPrice) : undefined,
+          sortOrder: formData.sortOrder === '' ? 0 : Number(formData.sortOrder),
+          servesPeople: formData.servesPeople === '' ? undefined : Number(formData.servesPeople)
+        };
+
         if (editingId) {
-          await updateProduct(editingId, {
-            ...formData,
-            servesPeople: formData.servesPeople === '' ? undefined : Number(formData.servesPeople),
-            originalPrice: formData.originalPrice || undefined
-          });
+          await updateProduct(editingId, payload);
           toast.success('Produto atualizado');
         } else {
-          await createProduct({
-            ...formData,
-            servesPeople: formData.servesPeople === '' ? undefined : Number(formData.servesPeople),
-            originalPrice: formData.originalPrice || undefined
-          });
+          await createProduct(payload);
           toast.success('Produto criado');
         }
         setIsOpen(false);
@@ -192,15 +229,34 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="price">Preço de Venda (R$)</Label>
-                  <Input id="price" type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} required />
+                  <Input 
+                    id="price" 
+                    type="text" 
+                    inputMode="decimal" 
+                    value={formData.price} 
+                    onChange={(e) => setFormData({...formData, price: sanitizeAndFormatPrice(e.target.value)})} 
+                    required 
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="costPrice">Preço de Custo (R$)</Label>
-                  <Input id="costPrice" type="number" step="0.01" value={formData.costPrice} onChange={(e) => setFormData({...formData, costPrice: e.target.value})} />
+                  <Input 
+                    id="costPrice" 
+                    type="text" 
+                    inputMode="decimal" 
+                    value={formData.costPrice} 
+                    onChange={(e) => setFormData({...formData, costPrice: sanitizeAndFormatPrice(e.target.value)})} 
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="sortOrder">Ordem</Label>
-                  <Input id="sortOrder" type="number" value={formData.sortOrder} onChange={(e) => setFormData({...formData, sortOrder: Number(e.target.value)})} required />
+                  <Label htmlFor="sortOrder">Ordem que Aparece</Label>
+                  <Input 
+                    id="sortOrder" 
+                    type="number" 
+                    value={formData.sortOrder} 
+                    onChange={(e) => setFormData({...formData, sortOrder: e.target.value})} 
+                    required 
+                  />
                 </div>
               </div>
 
@@ -211,7 +267,14 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="originalPrice">Preço Original / Riscar (Opcional)</Label>
-                  <Input id="originalPrice" type="number" step="0.01" placeholder="Ex: 89.90" value={formData.originalPrice} onChange={(e) => setFormData({...formData, originalPrice: e.target.value})} />
+                  <Input 
+                    id="originalPrice" 
+                    type="text" 
+                    inputMode="decimal" 
+                    placeholder="Ex: 89,90" 
+                    value={formData.originalPrice} 
+                    onChange={(e) => setFormData({...formData, originalPrice: sanitizeAndFormatPrice(e.target.value)})} 
+                  />
                   <p className="text-[10px] text-muted-foreground">Isso mostrará "De R$ 89,90 por R$ [Preço de Venda]"</p>
                 </div>
               </div>
@@ -353,7 +416,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-primary font-bold text-xs">
-                                    + R$ {Number(addon.price).toFixed(2)}
+                                    + R$ {Number(addon.price).toFixed(2).replace('.', ',')}
                                   </span>
                                   {addon.description && (
                                     <span className="text-[10px] text-gray-400 font-medium truncate italic">
@@ -431,9 +494,9 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                     </div>
                     <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{product.description}</p>
                     <div className="flex items-center gap-2">
-                      <div className="text-sm font-bold text-primary">R$ {Number(product.price).toFixed(2)}</div>
+                      <div className="text-sm font-bold text-primary">R$ {Number(product.price).toFixed(2).replace('.', ',')}</div>
                       {product.originalPrice && (
-                        <div className="text-xs text-muted-foreground line-through">R$ {Number(product.originalPrice).toFixed(2)}</div>
+                        <div className="text-xs text-muted-foreground line-through">R$ {Number(product.originalPrice).toFixed(2).replace('.', ',')}</div>
                       )}
                     </div>
                     {product.servesPeople && (

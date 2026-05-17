@@ -13,6 +13,43 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import Image from 'next/image';
 import { UploadButton } from '@/lib/uploadthing';
 
+// Helper functions for price formatting
+const toDisplayPrice = (val: any) => {
+  if (val === null || val === undefined) return '';
+  const str = String(val);
+  return str.replace(/\./g, ',');
+};
+
+const toBackendPrice = (val: string) => {
+  if (!val) return '';
+  return val.replace(/,/g, '.');
+};
+
+const sanitizeAndFormatPrice = (value: string) => {
+  let clean = value.replace(/R\$\s*/gi, '');
+  const lastCommaIndex = clean.lastIndexOf(',');
+  const lastDotIndex = clean.lastIndexOf('.');
+  
+  if (lastCommaIndex !== -1 && lastDotIndex !== -1) {
+    if (lastCommaIndex > lastDotIndex) {
+      clean = clean.replace(/\./g, '');
+    } else {
+      clean = clean.replace(/,/g, '').replace(/\./g, ',');
+    }
+  } else if (lastCommaIndex === -1 && lastDotIndex !== -1) {
+    clean = clean.replace(/\./g, ',');
+  }
+  
+  clean = clean.replace(/[^0-9,]/g, '');
+  
+  const parts = clean.split(',');
+  if (parts.length > 2) {
+    clean = parts[0] + ',' + parts.slice(1).join('');
+  }
+  
+  return clean;
+};
+
 export function AdicionaisClient({ addons, categories }: { addons: any[], categories: any[] }) {
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
@@ -49,7 +86,7 @@ export function AdicionaisClient({ addons, categories }: { addons: any[], catego
     setFormData({
       name: addon.name,
       description: addon.description || '',
-      price: addon.price,
+      price: toDisplayPrice(addon.price),
       categoryId: addon.categoryId || '',
       imageUrl: addon.imageUrl || '',
       isAvailable: addon.isAvailable,
@@ -99,13 +136,18 @@ export function AdicionaisClient({ addons, categories }: { addons: any[], catego
       return;
     }
 
+    const payload = {
+      ...formData,
+      price: toBackendPrice(formData.price),
+    };
+
     startTransition(async () => {
       try {
         if (editingId) {
-          await updateAddon(editingId, formData);
+          await updateAddon(editingId, payload);
           toast.success('Adicional atualizado');
         } else {
-          await createAddon(formData);
+          await createAddon(payload);
           toast.success('Adicional criado');
         }
         setIsOpen(false);
@@ -159,7 +201,14 @@ export function AdicionaisClient({ addons, categories }: { addons: any[], catego
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="price">Preço (R$)</Label>
-                  <Input id="price" type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} required />
+                  <Input 
+                    id="price" 
+                    type="text" 
+                    inputMode="decimal" 
+                    value={formData.price} 
+                    onChange={(e) => setFormData({...formData, price: sanitizeAndFormatPrice(e.target.value)})} 
+                    required 
+                  />
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
@@ -306,7 +355,7 @@ export function AdicionaisClient({ addons, categories }: { addons: any[], catego
                         {addon.category?.name || 'Sem categoria'}
                       </div>
                       <div className="text-[10px] text-muted-foreground line-clamp-1">{addon.description}</div>
-                      <div className="text-sm font-bold mt-1 text-primary">R$ {Number(addon.price).toFixed(2)}</div>
+                      <div className="text-sm font-bold mt-1 text-primary">R$ {Number(addon.price).toFixed(2).replace('.', ',')}</div>
                     </div>
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenEdit(addon)}>

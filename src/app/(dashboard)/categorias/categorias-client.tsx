@@ -18,13 +18,13 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
   const [formData, setFormData] = useState({
     name: '',
     type: 'produto' as 'produto' | 'adicional',
-    sortOrder: 0,
+    sortOrder: '0' as string | number,
     isActive: true
   });
 
   const handleOpenNew = () => {
     setEditingId(null);
-    setFormData({ name: '', type: 'produto', sortOrder: 0, isActive: true });
+    setFormData({ name: '', type: 'produto', sortOrder: '0', isActive: true });
     setIsOpen(true);
   };
 
@@ -33,7 +33,7 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
     setFormData({
       name: cat.name,
       type: cat.type,
-      sortOrder: cat.sortOrder,
+      sortOrder: cat.sortOrder !== null && cat.sortOrder !== undefined ? String(cat.sortOrder) : '0',
       isActive: cat.isActive
     });
     setIsOpen(true);
@@ -41,13 +41,17 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = {
+      ...formData,
+      sortOrder: formData.sortOrder === '' ? 0 : Number(formData.sortOrder)
+    };
     startTransition(async () => {
       try {
         if (editingId) {
-          await updateCategory(editingId, formData);
+          await updateCategory(editingId, payload);
           toast.success('Categoria atualizada');
         } else {
-          await createCategory(formData);
+          await createCategory(payload);
           toast.success('Categoria criada');
         }
         setIsOpen(false);
@@ -110,12 +114,12 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="sortOrder">Ordem (menor aparece primeiro)</Label>
+                <Label htmlFor="sortOrder">Ordem que Aparece (menor aparece primeiro)</Label>
                 <Input 
                   id="sortOrder" 
                   type="number" 
                   value={formData.sortOrder} 
-                  onChange={(e) => setFormData({...formData, sortOrder: Number(e.target.value)})} 
+                  onChange={(e) => setFormData({...formData, sortOrder: e.target.value})} 
                   required 
                 />
               </div>
