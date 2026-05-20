@@ -30,12 +30,18 @@ export async function POST(req: Request) {
   let evt: WebhookEvent;
   const isDev = process.env.NODE_ENV === 'development';
   const bypass = headerPayload.get('x-test-bypass') === 'true';
+  const bypassKey = headerPayload.get('x-test-bypass-key');
+  const configuredBypassKey = process.env.CLERK_BYPASS_KEY;
 
   // Verify the payload with the headers
   try {
     if (isDev && bypass) {
+      if (!configuredBypassKey || bypassKey !== configuredBypassKey) {
+        console.error('Clerk webhook bypass attempted but key is missing or invalid');
+        return new Response('Unauthorized bypass attempt', { status: 401 });
+      }
       evt = payload as WebhookEvent;
-      console.log('Clerk webhook bypass enabled for testing');
+      console.log('Clerk webhook bypass verified and enabled for testing');
     } else {
       // Create a new Svix instance with your secret.
       const wh = new Webhook(WEBHOOK_SECRET);

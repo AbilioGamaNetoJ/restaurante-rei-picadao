@@ -1,5 +1,7 @@
 
-const apiKey = "AIzaSyBXqNUkRvxcjvyF2m-GSf15uQOXH2Fa7Lc";
+const dotenv = require('dotenv');
+dotenv.config();
+const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 const storeAddress = "R. Francisco Jacinto de Melo, 1449 - Areias, São José - SC, 88113-300";
 
 async function testGeocode() {

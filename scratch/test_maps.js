@@ -1,5 +1,7 @@
 
-const apiKey = "AIzaSyBXqNUkRvxcjvyF2m-GSf15uQOXH2Fa7Lc";
+const dotenv = require('dotenv');
+dotenv.config();
+const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 const origin = { lat: -27.4285, lng: -48.4593 };
 const destination = { lat: -27.4285, lng: -48.4833 }; // Approx 2.4km away
 
