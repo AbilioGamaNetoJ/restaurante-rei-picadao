@@ -103,7 +103,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.categoryIds.length === 0) {
-      toast.error('Selecione pelo menos uma categoria');
+      toast.error('Selecione pelo menos uma categoria', { style: { color: '#dc2626' } });
       return;
     }
 
@@ -120,14 +120,14 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
 
         if (editingId) {
           await updateProduct(editingId, payload);
-          toast.success('Produto atualizado');
+              toast.success('Produto atualizado com sucesso!', { style: { color: '#16a34a' } });
         } else {
           await createProduct(payload);
-          toast.success('Produto criado');
+              toast.success('Produto criado com sucesso!', { style: { color: '#16a34a' } });
         }
         setIsOpen(false);
       } catch (error) {
-        toast.error('Erro ao salvar produto');
+        toast.error('Erro ao salvar produto', { style: { color: '#dc2626' } });
       }
     });
   };
@@ -137,9 +137,9 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
     startTransition(async () => {
       try {
         await deleteProduct(id);
-        toast.success('Produto excluído');
+        toast.success('Produto excluído com sucesso!', { style: { color: '#16a34a' } });
       } catch (error) {
-        toast.error('Erro ao excluir produto');
+        toast.error('Erro ao excluir produto', { style: { color: '#dc2626' } });
       }
     });
   };
@@ -284,7 +284,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                 <div className="flex items-center gap-4 p-4 border-2 border-dashed rounded-md bg-slate-50 dark:bg-slate-900/50">
                   {formData.imageUrl ? (
                     <div className="relative h-24 w-24 rounded-md overflow-hidden border shadow-sm">
-                      <Image src={formData.imageUrl} alt="Preview" fill className="object-cover" />
+                      <Image src={formData.imageUrl} alt="Preview" fill sizes="96px" className="object-cover" />
                       <button 
                         type="button"
                         onClick={() => setFormData({...formData, imageUrl: ''})}
@@ -304,12 +304,12 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                       endpoint="productImage"
                       onClientUploadComplete={(res) => {
                         if (res?.[0]) {
-                          setFormData({ ...formData, imageUrl: res[0].url });
-                          toast.success("Imagem enviada com sucesso!");
+                          setFormData({ ...formData, imageUrl: res[0].ufsUrl });
+                          toast.success("Imagem enviada com sucesso!", { style: { color: '#16a34a' } });
                         }
                       }}
                       onUploadError={(error: Error) => {
-                        toast.error(`Erro no upload: ${error.message}`);
+                        toast.error(`Erro no upload: ${error.message}`, { style: { color: '#dc2626' } });
                       }}
                       appearance={{
                         button: "bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 rounded-md text-sm font-medium transition-colors ut-uploading:cursor-not-allowed",

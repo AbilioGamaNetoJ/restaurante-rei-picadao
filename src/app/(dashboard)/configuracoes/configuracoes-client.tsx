@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { updateStoreSettings, updateStoreHours } from './actions';
-import { Trash2, Plus, Star, Clock, Bike } from 'lucide-react';
+import { Trash2, Plus, Star, Clock, Bike, MapPin } from 'lucide-react';
 import { UploadButton } from '@/lib/uploadthing';
 import { cn } from '@/lib/utils';
 import { StoreIcon } from '@/components/store/store-icons';
@@ -79,6 +79,26 @@ export function ConfiguracoesClient({
     newHours[index] = { ...newHours[index], [field]: value };
     setHours(newHours);
   };
+
+  const isStoreOpen = () => {
+    const now = new Date();
+    const currentDay = now.getDay();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+
+    const todayHours = hours.filter(h => h.dayOfWeek === currentDay);
+    if (todayHours.length === 0) return false;
+
+    return todayHours.some(h => {
+      if (!h.openTime || !h.closeTime) return false;
+      const [openH, openM] = h.openTime.split(':').map(Number);
+      const [closeH, closeM] = h.closeTime.split(':').map(Number);
+      const openTime = openH * 60 + openM;
+      const closeTime = closeH * 60 + closeM;
+      return currentTime >= openTime && currentTime <= closeTime;
+    });
+  };
+
+  const openStatus = isStoreOpen();
 
   return (
     <div className="space-y-8">
@@ -195,7 +215,8 @@ export function ConfiguracoesClient({
                   <UploadButton
                     endpoint="productImage"
                     onClientUploadComplete={(res) => {
-                      setSettings({...settings, logoUrl: res[0].url});
+                      if (!res || res.length === 0) return;
+                      setSettings({...settings, logoUrl: res[0].ufsUrl || res[0].url});
                       toast.success("Logo enviado com sucesso");
                     }}
                     onUploadError={(error: Error) => {
@@ -239,7 +260,8 @@ export function ConfiguracoesClient({
                   <UploadButton
                     endpoint="productImage"
                     onClientUploadComplete={(res) => {
-                      setSettings({...settings, bannerUrl: res[0].url});
+                      if (!res || res.length === 0) return;
+                      setSettings({...settings, bannerUrl: res[0].ufsUrl || res[0].url});
                       toast.success("Banner enviado com sucesso");
                     }}
                     onUploadError={(error: Error) => {
@@ -345,10 +367,10 @@ export function ConfiguracoesClient({
           <h2 className="text-xl font-bold tracking-tight">Prévia em Tempo Real (Loja)</h2>
         </div>
         
-        <Card className="overflow-hidden border-none shadow-2xl bg-gray-100 p-4 md:p-8">
-          <div className="bg-white rounded-[2rem] overflow-hidden shadow-xl max-w-4xl mx-auto w-full border">
-            {/* Mock Header */}
-            <header className="h-14 border-b bg-white/70 backdrop-blur-md px-6 flex items-center justify-between">
+        <Card className="overflow-hidden border-none shadow-2xl bg-gray-100 p-0 md:p-4">
+          <div className="bg-white rounded-[2rem] overflow-hidden shadow-xl w-full border relative">
+            {/* Mock Header (Optional, but gives browser context) */}
+            <header className="h-14 border-b bg-white/70 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-50">
               <div className="flex items-center gap-2">
                 <div className="bg-red-600 p-1.5 rounded-full">
                   <StoreIcon className="h-3 w-3 text-white" />
@@ -360,66 +382,97 @@ export function ConfiguracoesClient({
               </div>
             </header>
 
-            <div className="bg-gray-50 pb-12">
-              {/* Mock Banner */}
-              <div className="relative w-full h-32 md:h-48 overflow-hidden">
+            <div className="bg-gray-50 pb-12 flex flex-col">
+              {/* Hero Banner Section (Truly Full Width) */}
+              <div className="relative w-full h-[200px] md:h-[280px] overflow-hidden group">
                 {settings.bannerUrl ? (
-                  <img src={settings.bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+                  <img 
+                    src={settings.bannerUrl} 
+                    alt="Banner" 
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
+                  />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-r from-red-500 to-orange-500" />
+                  <div className="w-full h-full bg-gradient-to-br from-red-600 via-red-500 to-orange-500" />
                 )}
-                <div className="absolute inset-0 bg-black/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
               </div>
 
-              {/* Mock Store Info */}
-              <div className="px-6 md:px-10 -mt-12 relative z-10">
-                <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-lg border border-white/50 flex flex-col md:flex-row items-center md:items-start gap-4">
-                  {/* Logo */}
-                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-white bg-white shadow-md overflow-hidden flex-shrink-0 -mt-14">
-                    {settings.logoUrl ? (
-                      <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-red-600 flex items-center justify-center text-white text-2xl font-black">
-                        {settings.name?.[0] || "L"}
-                      </div>
-                    )}
+              {/* Store Info Card (Floating Premium) */}
+              <div className="relative -mt-16 md:-mt-24 z-10 bg-white/90 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-white/50 p-6 flex flex-col md:flex-row items-center md:items-start gap-6 max-w-4xl w-[calc(100%-2rem)] mx-auto ring-1 ring-black/5 transition-all duration-500 hover:shadow-[0_30px_70px_rgba(0,0,0,0.18)]">
+                {/* Logo */}
+                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-8 border-white bg-white shadow-2xl overflow-hidden flex-shrink-0 -mt-16 md:-mt-20 transition-transform duration-500 hover:scale-105">
+                  {settings.logoUrl ? (
+                    <img src={settings.logoUrl} alt={settings.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white">
+                      <span className="text-4xl font-black tracking-tighter">{settings.name?.[0] || "R"}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Store Details */}
+                <div className="flex-1 text-center md:text-left space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                    <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tighter">
+                      {settings.name || "Rei do Picadão"}
+                    </h1>
+                    <div className={cn(
+                      "self-center md:self-auto px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-colors",
+                      openStatus 
+                        ? "bg-green-50 text-green-600 border-green-200" 
+                        : "bg-red-50 text-red-600 border-red-200"
+                    )}>
+                      {openStatus ? "• Aberto agora" : "• Fechado"}
+                    </div>
                   </div>
 
-                  <div className="flex-1 text-center md:text-left space-y-2">
-                    <div className="flex flex-col md:flex-row md:items-center gap-2">
-                      <h3 className="text-xl md:text-2xl font-black tracking-tighter">{settings.name || "Nome da Loja"}</h3>
-                      <div className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest bg-green-50 text-green-600 border border-green-200 self-center md:self-auto">
-                        Aberto
+                  <div className="flex flex-wrap justify-center md:justify-start items-center gap-x-6 gap-y-3 text-xs text-gray-500 font-medium">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-yellow-50 p-1.5 rounded-lg">
+                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                       </div>
+                      <span className="font-bold text-gray-900">4.8</span>
+                      <span className="opacity-60">(500+ avaliações)</span>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <div className="bg-blue-50 p-1.5 rounded-lg">
+                        <Clock className="h-4 w-4 text-blue-500" />
+                      </div>
+                      <span className="text-gray-900 font-bold">35-45 min</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="bg-purple-50 p-1.5 rounded-lg">
+                        <Bike className="h-4 w-4 text-purple-500" />
+                      </div>
+                      <span className="text-gray-900 font-bold">Não entregamos acima de {settings.deliveryRadiusKm || "10"} km</span>
+                    </div>
+                  </div>
 
-                    <div className="flex flex-wrap justify-center md:justify-start items-center gap-x-4 gap-y-1 text-[10px] text-gray-500 font-bold">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                        <span>4.8</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        <span>35-45 min</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Bike className="h-3 w-3" />
-                        <span>R$ {parseFloat(settings.deliveryFeeKm || "0").toFixed(2)}/km</span>
-                      </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 font-medium justify-center md:justify-start">
+                    <div className="bg-orange-50 p-1.5 rounded-lg">
+                      <MapPin className="h-4 w-4 text-orange-500" />
+                    </div>
+                    <span className="text-gray-900 font-bold line-clamp-1">{settings.address || "Endereço não informado"}</span>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-center md:justify-start">
+                    <div className="bg-gray-100/50 px-4 py-2 rounded-2xl flex items-center gap-3 border border-gray-200/50">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Pedido Mínimo</span>
+                      <span className="text-base font-black text-gray-900">R$ {parseFloat(settings.minOrder || "0").toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Mock Categories */}
-              <div className="mt-6 px-6 overflow-hidden">
+              <div className="mt-8 px-4 md:px-8 overflow-hidden max-w-5xl mx-auto w-full">
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                  {['Burgers', 'Bebidas', 'Acompanhamentos'].map((cat, i) => (
+                  {['Destaques', 'Porções', 'Bebidas', 'Sobremesas'].map((cat, i) => (
                     <div 
                       key={cat} 
                       className={cn(
-                        "px-4 py-2 rounded-xl text-[10px] font-black whitespace-nowrap border transition-all",
-                        i === 0 ? "bg-red-600 text-white border-red-600 shadow-md shadow-red-100" : "bg-white text-gray-400 border-gray-100"
+                        "px-6 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap border transition-all",
+                        i === 0 ? "bg-red-600 text-white border-red-600 shadow-lg shadow-red-200" : "bg-white text-gray-500 border-gray-200"
                       )}
                     >
                       {cat}
@@ -430,7 +483,7 @@ export function ConfiguracoesClient({
             </div>
           </div>
           <p className="text-center text-[10px] text-muted-foreground mt-4 font-medium uppercase tracking-widest opacity-60">
-            Esta é uma representação visual de como sua loja aparece para os clientes
+            Esta é uma representação visual atualizada de como sua loja aparece para os clientes
           </p>
         </Card>
       </div>
