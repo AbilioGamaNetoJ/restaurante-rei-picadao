@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { createAddon, updateAddon, deleteAddon } from './adicionais-actions';
 import { createCategory, deleteCategory } from '@/app/(dashboard)/categorias/actions';
-import { Plus, Trash2, Edit2, Check, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { UploadButton } from '@/lib/uploadthing';
@@ -54,7 +54,13 @@ export function AdicionaisClient({ addons, categories }: { addons: any[], catego
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   
+  const filteredAddons = addons.filter(a =>
+    a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (a.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+  );
+
   // State for new category creation
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -172,7 +178,15 @@ export function AdicionaisClient({ addons, categories }: { addons: any[], catego
   return (
     <div className="space-y-4">
       <div className="flex justify-between">
-        <Input placeholder="Buscar adicionais..." className="max-w-sm" />
+        <div className="relative max-w-sm">
+          <Input
+            placeholder="Buscar adicionais..."
+            className="pr-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        </div>
         
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger nativeButton={true} render={
@@ -334,10 +348,12 @@ export function AdicionaisClient({ addons, categories }: { addons: any[], catego
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {addons.length === 0 ? (
-          <div className="col-span-full py-12 text-center text-muted-foreground">Nenhum adicional cadastrado.</div>
+        {filteredAddons.length === 0 ? (
+          <div className="col-span-full py-12 text-center text-muted-foreground">
+            {searchQuery ? `Nenhum resultado para "${searchQuery}"` : 'Nenhum adicional cadastrado.'}
+          </div>
         ) : (
-          addons.map(addon => (
+          filteredAddons.map(addon => (
             <Card key={addon.id} className={!addon.isAvailable ? 'opacity-60' : ''}>
               <CardContent className="p-4 flex gap-4">
                 <div className="h-16 w-16 bg-slate-100 rounded-md flex-shrink-0 relative overflow-hidden">

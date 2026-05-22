@@ -11,7 +11,8 @@ import {
   DollarSign, 
   Settings,
   LogOut,
-  Menu
+  Menu,
+  User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -101,6 +102,12 @@ export default async function DashboardLayout({
       href: '/configuracoes',
       icon: Settings,
       permission: 'edit_settings',
+    },
+    {
+      title: 'Meu Perfil',
+      href: '/perfil',
+      icon: User,
+      permission: 'access_dashboard',
     },
   ];
 

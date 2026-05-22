@@ -20,13 +20,15 @@ export const metadata: Metadata = {
   description: "A melhor porção da cidade!",
 };
 
+import { ptBR } from "@clerk/localizations";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider localization={ptBR}>
       <html
         lang="pt-BR"
         className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}

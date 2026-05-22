@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { createCategory, updateCategory, deleteCategory } from './actions';
-import { Plus, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Edit2, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 
@@ -14,7 +14,12 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   
+  const filteredCategories = initialCategories.filter(c =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const [formData, setFormData] = useState({
     name: '',
     type: 'produto' as 'produto' | 'adicional',
@@ -76,7 +81,15 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
   return (
     <div className="space-y-4">
       <div className="flex justify-between">
-        <Input placeholder="Buscar categorias..." className="max-w-sm" />
+        <div className="relative max-w-sm">
+          <Input
+            placeholder="Buscar categorias..."
+            className="pr-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        </div>
         
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger nativeButton={true} render={
@@ -145,10 +158,12 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
       <Card>
         <CardContent className="p-0">
           <div className="divide-y">
-            {initialCategories.length === 0 ? (
-              <div className="p-6 text-center text-muted-foreground">Nenhuma categoria encontrada.</div>
+            {filteredCategories.length === 0 ? (
+              <div className="p-6 text-center text-muted-foreground">
+                {searchQuery ? `Nenhuma categoria encontrada para "${searchQuery}"` : 'Nenhuma categoria encontrada.'}
+              </div>
             ) : (
-              initialCategories.map((cat) => (
+              filteredCategories.map((cat) => (
                 <div key={cat.id} className="flex items-center justify-between p-4">
                   <div>
                     <h3 className="font-medium">{cat.name}</h3>

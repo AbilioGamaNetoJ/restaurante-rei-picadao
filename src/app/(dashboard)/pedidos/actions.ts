@@ -26,6 +26,7 @@ export async function updateOrderStatus(orderId: string, newStatus: string) {
     .where(eq(orders.id, orderId));
 
   revalidatePath('/pedidos');
+  revalidatePath('/dashboard');
 }
 
 export async function deleteOrder(orderId: string) {
@@ -40,4 +41,5 @@ export async function deleteOrder(orderId: string) {
     .where(eq(orders.id, orderId));
 
   revalidatePath('/pedidos');
+  revalidatePath('/dashboard');
 }

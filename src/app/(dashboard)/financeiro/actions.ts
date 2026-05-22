@@ -29,7 +29,7 @@ export async function createExpense(data: { description: string; amount: string;
 export async function deleteExpense(id: string) {
   const { userId, sessionClaims } = await auth();
   const role = (sessionClaims?.metadata as any)?.role;
-  
+
   if (!userId || role !== 'dono') {
     throw new Error('Não autorizado');
   }
@@ -37,4 +37,25 @@ export async function deleteExpense(id: string) {
   await db.delete(expenses).where(eq(expenses.id, id));
 
   revalidatePath('/financeiro');
+}
+
+export async function updateExpense(id: string, data: { description?: string; amount?: string; category?: string }) {
+  const { userId, sessionClaims } = await auth();
+  const role = (sessionClaims?.metadata as any)?.role;
+
+  if (!userId || role !== 'dono') {
+    throw new Error('Não autorizado');
+  }
+
+  const updateData: any = {};
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.amount !== undefined) updateData.amount = data.amount;
+  if (data.category !== undefined) updateData.category = data.category;
+
+  await db.update(expenses)
+    .set(updateData)
+    .where(eq(expenses.id, id));
+
+  revalidatePath('/financeiro');
+  revalidatePath('/dashboard');
 }

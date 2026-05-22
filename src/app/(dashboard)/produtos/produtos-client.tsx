@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { createProduct, updateProduct, deleteProduct } from './actions';
-import { Plus, Trash2, Edit2, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import Image from 'next/image';
@@ -55,7 +55,13 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   
+  const filteredProducts = initialProducts.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+  );
+
   const [formData, setFormData] = useState({
     name: '',
     categoryIds: [] as string[],
@@ -156,7 +162,15 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
   return (
     <div className="space-y-4">
       <div className="flex justify-between">
-        <Input placeholder="Buscar produtos..." className="max-w-sm" />
+        <div className="relative max-w-sm">
+          <Input
+            placeholder="Buscar produtos..."
+            className="pr-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        </div>
         
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger nativeButton={true} render={
@@ -469,10 +483,12 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {initialProducts.length === 0 ? (
-          <div className="col-span-full py-12 text-center text-muted-foreground">Nenhum produto cadastrado.</div>
+        {filteredProducts.length === 0 ? (
+          <div className="col-span-full py-12 text-center text-muted-foreground">
+            {searchQuery ? `Nenhum resultado para "${searchQuery}"` : 'Nenhum produto cadastrado.'}
+          </div>
         ) : (
-          initialProducts.map(product => (
+          filteredProducts.map(product => (
             <Card key={product.id} className={!product.isAvailable ? 'opacity-60' : ''}>
               <CardContent className="p-4 flex gap-4">
                 <div className="h-20 w-20 bg-slate-100 rounded-md flex-shrink-0 relative overflow-hidden">

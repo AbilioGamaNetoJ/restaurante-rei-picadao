@@ -3,6 +3,8 @@ import { db } from '@/db';
 import { orders } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
+import { revalidatePath } from 'next/cache';
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -43,6 +45,9 @@ export async function POST(req: Request) {
           paymentStatus: payment.status
         })
         .where(eq(orders.id, orderId));
+        
+      revalidatePath('/dashboard');
+      revalidatePath('/pedidos');
     }
 
     return NextResponse.json({ received: true }, { status: 200 });

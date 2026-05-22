@@ -274,6 +274,10 @@ export const users = pgTable('users', {
   name: text('name'),
   email: text('email').notNull(),
   role: text('role').notNull().default('cliente'),
+  salary: numeric('salary', { precision: 10, scale: 2 }),
+  position: text('position'),
+  department: text('department'),
+  isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

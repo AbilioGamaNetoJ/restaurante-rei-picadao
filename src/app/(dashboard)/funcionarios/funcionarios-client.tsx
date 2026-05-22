@@ -1,74 +1,413 @@
 'use client';
 
 import * as React from 'react';
-
-
 import { useState, useTransition } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { updateUserRole } from './actions';
+import { updateUserRole, updateEmployee, deleteEmployee } from './actions';
 import Image from 'next/image';
+import { Edit2, Trash2, X, UserCheck, UserX } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+
+// Helper functions for price formatting
+const toDisplayPrice = (val: any) => {
+  if (val === null || val === undefined) return '';
+  const str = String(val);
+  return str.replace(/\./g, ',');
+};
+
+const toBackendPrice = (val: string) => {
+  if (!val) return '';
+  return val.replace(/,/g, '.');
+};
+
+const sanitizeAndFormatPrice = (value: string) => {
+  let clean = value.replace(/R\$\s*/gi, '');
+  const lastCommaIndex = clean.lastIndexOf(',');
+  const lastDotIndex = clean.lastIndexOf('.');
+
+  if (lastCommaIndex !== -1 && lastDotIndex !== -1) {
+    if (lastCommaIndex > lastDotIndex) {
+      clean = clean.replace(/\./g, '');
+    } else {
+      clean = clean.replace(/,/g, '').replace(/\./g, ',');
+    }
+  } else if (lastCommaIndex === -1 && lastDotIndex !== -1) {
+    clean = clean.replace(/\./g, ',');
+  }
+
+  clean = clean.replace(/[^0-9,]/g, '');
+
+  const parts = clean.split(',');
+  if (parts.length > 2) {
+    clean = parts[0] + ',' + parts.slice(1).join('');
+  }
+
+  return clean;
+};
+
+const formatSalary = (salary: any) => {
+  if (!salary) return '-';
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(Number(salary));
+};
+
+type FilterType = 'all' | 'active' | 'inactive';
 
 export function FuncionariosClient({ users, currentRole }: { users: any[], currentRole: string }) {
   const [isPending, startTransition] = useTransition();
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [editDialog, setEditDialog] = useState<{ open: boolean; user: any }>({ open: false, user: null });
+
+  const [formData, setFormData] = useState({
+    position: '',
+    department: '',
+    salary: '',
+    role: '',
+    isActive: true,
+  });
+
+  const filteredUsers = users.filter(user => {
+    if (filter === 'active') return user.isActive !== false;
+    if (filter === 'inactive') return user.isActive === false;
+    return true;
+  });
+
+  const handleOpenEdit = (user: any) => {
+    setEditDialog({ open: true, user });
+    setFormData({
+      position: user.position || '',
+      department: user.department || '',
+      salary: toDisplayPrice(user.salary),
+      role: user.role,
+      isActive: user.isActive !== false,
+    });
+  };
+
+  const handleCloseEdit = () => {
+    setEditDialog({ open: false, user: null });
+  };
+
+  const handleSubmitEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editDialog.user) return;
+
+    startTransition(async () => {
+      try {
+        // Atualizar role se mudou
+        if (formData.role !== editDialog.user.role) {
+          await updateUserRole(editDialog.user.id, formData.role);
+        }
+
+        // Atualizar outros campos
+        await updateEmployee(editDialog.user.id, {
+          position: formData.position || null,
+          department: formData.department || null,
+          salary: toBackendPrice(formData.salary) || null,
+          isActive: formData.isActive,
+        });
+
+        toast.success('Funcionário atualizado com sucesso!', { style: { color: '#16a34a' } });
+        handleCloseEdit();
+      } catch (error: any) {
+        toast.error(error.message || 'Erro ao atualizar funcionário', { style: { color: '#dc2626' } });
+      }
+    });
+  };
 
   const handleRoleChange = (userId: string, newRole: string) => {
     startTransition(async () => {
       try {
         await updateUserRole(userId, newRole);
-        toast.success('Nível de acesso atualizado');
+        toast.success('Nível de acesso atualizado com sucesso!', { style: { color: '#16a34a' } });
       } catch (error: any) {
-        toast.error(error.message || 'Erro ao atualizar nível de acesso');
+        toast.error(error.message || 'Erro ao atualizar nível de acesso', { style: { color: '#dc2626' } });
       }
     });
   };
 
+  const handleDelete = (userId: string) => {
+    if (!confirm('Deseja realmente excluir este funcionário? Ele voltará a ser apenas um cliente.')) return;
+
+    startTransition(async () => {
+      try {
+        await deleteEmployee(userId);
+        toast.success('Funcionário excluído com sucesso!', { style: { color: '#16a34a' } });
+      } catch (error: any) {
+        toast.error(error.message || 'Erro ao excluir funcionário', { style: { color: '#dc2626' } });
+      }
+    });
+  };
+
+  const getRoleBadge = (role: string) => {
+    const variants: Record<string, string> = {
+      dono: 'bg-amber-100 text-amber-800 hover:bg-amber-100',
+      gerente: 'bg-purple-100 text-purple-800 hover:bg-purple-100',
+      funcionario: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
+      cliente: 'bg-gray-100 text-gray-800 hover:bg-gray-100',
+    };
+    return variants[role] || variants.cliente;
+  };
+
+  const getRoleLabel = (role: string) => {
+    const labels: Record<string, string> = {
+      dono: 'Dono',
+      gerente: 'Gerente',
+      funcionario: 'Funcionário',
+      cliente: 'Cliente',
+    };
+    return labels[role] || 'Cliente';
+  };
+
   return (
     <div className="space-y-4">
-      <Card>
-        <CardContent className="p-0">
-          <div className="divide-y">
-            {users.length === 0 ? (
-              <div className="p-6 text-center text-muted-foreground">Nenhum usuário encontrado.</div>
-            ) : (
-              users.map((user) => (
-                <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 relative rounded-full overflow-hidden bg-slate-100">
-                      {user.imageUrl ? (
-                        <Image src={user.imageUrl} alt={user.firstName || ''} fill className="object-cover" sizes="40px" />
+      {/* Filtros e info */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex gap-2">
+          <Button
+            variant={filter === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('all')}
+          >
+            Todos
+          </Button>
+          <Button
+            variant={filter === 'active' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('active')}
+          >
+            <UserCheck className="h-4 w-4 mr-1" /> Ativos
+          </Button>
+          <Button
+            variant={filter === 'inactive' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('inactive')}
+          >
+            <UserX className="h-4 w-4 mr-1" /> Inativos
+          </Button>
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          {filteredUsers.length} {filteredUsers.length === 1 ? 'funcionário' : 'funcionários'}
+        </p>
+      </div>
+
+      {/* Tabela */}
+      <div className="rounded-md border bg-white">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 border-b">
+              <tr>
+                <th className="text-left p-4 font-semibold">Nome</th>
+                <th className="text-left p-4 font-semibold">Cargo</th>
+                <th className="text-left p-4 font-semibold">Setor</th>
+                <th className="text-left p-4 font-semibold">Acesso</th>
+                <th className="text-left p-4 font-semibold">Salário</th>
+                <th className="text-left p-4 font-semibold">Status</th>
+                <th className="text-left p-4 font-semibold">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                    Nenhum funcionário encontrado.
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((user) => (
+                  <tr key={user.id} className="border-b hover:bg-slate-50">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 relative rounded-full overflow-hidden bg-slate-100 flex-shrink-0">
+                          {user.imageUrl ? (
+                            <Image src={user.imageUrl} alt={user.firstName || ''} fill className="object-cover" sizes="40px" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-medium">
+                              {user.firstName?.charAt(0) || user.email?.charAt(0) || '?'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">
+                            {user.firstName} {user.lastName}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      {user.position || <span className="text-muted-foreground">-</span>}
+                    </td>
+                    <td className="p-4">
+                      {user.department || <span className="text-muted-foreground">-</span>}
+                    </td>
+                    <td className="p-4">
+                      <Badge className={getRoleBadge(user.role)}>
+                        {getRoleLabel(user.role)}
+                      </Badge>
+                    </td>
+                    <td className="p-4">
+                      {user.salary ? (
+                        <span className="font-semibold text-emerald-600">{formatSalary(user.salary)}</span>
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">Sem foto</div>
+                        <span className="text-muted-foreground">-</span>
                       )}
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{user.firstName} {user.lastName}</h3>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <select
-                      className="flex h-10 w-full sm:w-auto rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed"
-                      value={user.role as string}
-                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                      disabled={isPending || (currentRole === 'gerente' && ['dono', 'gerente'].includes(user.role as string))}
-                    >
-                      <option value="cliente">Cliente (Sem acesso)</option>
-                      <option value="funcionario">Funcionário</option>
-                      {currentRole === 'dono' && <option value="gerente">Gerente</option>}
-                      {currentRole === 'dono' && <option value="dono">Dono</option>}
-                    </select>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      
+                    </td>
+                    <td className="p-4">
+                      {user.isActive !== false ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          Ativo
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                          Inativo
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleOpenEdit(user)}
+                          title="Editar"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        {currentRole === 'dono' && user.role !== 'dono' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-500 hover:text-red-700"
+                            onClick={() => handleDelete(user.id)}
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <p className="text-sm text-muted-foreground">
-        Nota: Para adicionar novos funcionários, eles precisam se cadastrar na loja como clientes primeiro. Depois, você pode alterar o nível de acesso deles aqui.
+        Nota: Para adicionar novos funcionários, eles precisam se cadastrar na loja como clientes primeiro. Depois, você pode alterar o nível de acesso, salário, cargo e setor deles aqui.
       </p>
+
+      {/* Dialog de Edição */}
+      <Dialog open={editDialog.open} onOpenChange={(open) => !open && handleCloseEdit()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Funcionário</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmitEdit} className="space-y-4">
+            {editDialog.user && (
+              <div className="flex items-center gap-3 pb-4 border-b">
+                <div className="h-12 w-12 relative rounded-full overflow-hidden bg-slate-100">
+                  {editDialog.user.imageUrl ? (
+                    <Image src={editDialog.user.imageUrl} alt="" fill className="object-cover" sizes="48px" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm font-medium">
+                      {editDialog.user.firstName?.charAt(0) || '?'}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="font-medium">{editDialog.user.firstName} {editDialog.user.lastName}</p>
+                  <p className="text-sm text-muted-foreground">{editDialog.user.email}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="position">Cargo</Label>
+                <Input
+                  id="position"
+                  placeholder="Ex: Vendedor"
+                  value={formData.position}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="department">Setor</Label>
+                <Input
+                  id="department"
+                  placeholder="Ex: Vendas"
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="salary">Salário (R$)</Label>
+              <Input
+                id="salary"
+                type="text"
+                inputMode="decimal"
+                placeholder="Ex: 2.500,00"
+                value={formData.salary}
+                onChange={(e) => setFormData({ ...formData, salary: sanitizeAndFormatPrice(e.target.value) })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="role">Nível de Acesso</Label>
+              <select
+                id="role"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                disabled={currentRole === 'gerente' && ['dono', 'gerente'].includes(formData.role)}
+              >
+                <option value="cliente">Cliente (Sem acesso)</option>
+                <option value="funcionario">Funcionário</option>
+                {currentRole === 'dono' && <option value="gerente">Gerente</option>}
+                {currentRole === 'dono' && <option value="dono">Dono</option>}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={formData.isActive}
+                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <Label htmlFor="isActive" className="cursor-pointer">Funcionário Ativo</Label>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={handleCloseEdit}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                Salvar Alterações
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
