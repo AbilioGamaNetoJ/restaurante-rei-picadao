@@ -119,30 +119,30 @@ export default async function DashboardLayout({
   const storeName = settings?.name || "Rei do Picadão";
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-muted/40 md:block">
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] bg-slate-50">
+      <div className="hidden border-r border-slate-200 bg-white md:block relative z-20 shadow-[1px_0_10px_rgba(0,0,0,0.02)]">
         <SidebarContent allowedItems={allowedItems} logoUrl={logoUrl} storeName={storeName} />
       </div>
       <div className="flex flex-col">
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+        <header className="flex h-14 items-center gap-4 border-b border-slate-200 bg-white/80 backdrop-blur-md px-4 lg:h-[60px] lg:px-6 sticky top-0 z-10 transition-all">
           <Sheet>
             <SheetTrigger nativeButton={true} render={
               <button
-                className="shrink-0 md:hidden inline-flex items-center justify-center rounded-lg border border-border bg-background h-8 w-8 hover:bg-muted hover:text-foreground"
+                className="shrink-0 md:hidden inline-flex items-center justify-center rounded-md border border-slate-200 bg-white h-9 w-9 text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
               >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Menu de navegação</span>
               </button>
             } />
-            <SheetContent side="left" className="flex flex-col p-0 w-64">
+            <SheetContent side="left" className="flex flex-col p-0 w-72 border-r-0">
               <SidebarContent allowedItems={allowedItems} logoUrl={logoUrl} storeName={storeName} />
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-            <h1 className="text-lg font-semibold">Painel Administrativo</h1>
+            <h1 className="text-lg font-bold tracking-tight text-slate-800">Painel Administrativo</h1>
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-slate-50 dark:bg-slate-900">
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-slate-50/50">
           {children}
         </main>
       </div>
@@ -152,38 +152,41 @@ export default async function DashboardLayout({
 
 function SidebarContent({ allowedItems, logoUrl, storeName }: { allowedItems: any[], logoUrl?: string | null, storeName: string }) {
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-        <Link href="/" className="flex items-center gap-3 font-bold group">
+    <div className="flex h-full flex-col bg-white">
+      <div className="flex h-14 md:h-[60px] items-center border-b border-slate-100 px-4 lg:px-6">
+        <Link href="/" className="flex items-center gap-3 font-bold group w-full">
           {logoUrl ? (
             <img 
               src={logoUrl} 
               alt={storeName} 
-              className="h-8 w-8 object-cover rounded-full border bg-white shadow-sm transition-transform group-hover:scale-110" 
+              className="h-8 w-8 object-cover rounded-md border border-slate-100 bg-white shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:shadow-md" 
             />
           ) : (
-            <div className="bg-red-600 text-white p-1.5 rounded-full shadow-lg shadow-red-200 transition-transform group-hover:rotate-6">
-              <Package className="h-4 w-4" />
+            <div className="bg-gradient-to-tr from-slate-900 to-slate-800 text-white p-1.5 rounded-lg shadow-sm transition-transform duration-300 group-hover:scale-105">
+              <Package className="h-[18px] w-[18px]" />
             </div>
           )}
-          <span className="truncate tracking-tighter">{storeName}</span>
+          <span className="truncate tracking-tight text-slate-900 group-hover:text-blue-700 transition-colors">{storeName}</span>
         </Link>
       </div>
-      <div className="flex-1 overflow-auto py-2">
-        <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+      <div className="flex-1 overflow-auto py-6">
+        <nav className="grid items-start px-3 text-sm font-medium gap-1.5 lg:px-4">
+          <div className="px-3 pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            Menu Principal
+          </div>
           {allowedItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              className="group flex items-center gap-3 rounded-md px-3 py-2.5 text-slate-500 transition-all duration-200 hover:bg-blue-50/60 hover:text-blue-700"
             >
-              <item.icon className="h-4 w-4" />
+              <item.icon className="h-4 w-4 transition-transform duration-200 group-hover:scale-110 group-hover:text-blue-600" />
               {item.title}
             </Link>
           ))}
         </nav>
       </div>
-      <div className="mt-auto p-4 border-t">
+      <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/50">
         <LogoutButton />
       </div>
     </div>
