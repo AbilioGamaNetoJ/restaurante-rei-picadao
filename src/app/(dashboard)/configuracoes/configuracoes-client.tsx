@@ -101,7 +101,7 @@ export function ConfiguracoesClient({
   const openStatus = isStoreOpen();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Dados Gerais e de Entrega */}
       <Card>
         <CardHeader>
@@ -112,7 +112,7 @@ export function ConfiguracoesClient({
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSettingsSubmit} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome da Loja</Label>
                 <Input 
@@ -188,7 +188,7 @@ export function ConfiguracoesClient({
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
               {/* Logo */}
               <div className="space-y-4">
                 <Label>Logo do Restaurante</Label>
@@ -296,14 +296,14 @@ export function ConfiguracoesClient({
       {/* Horários de Funcionamento */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Horários de Funcionamento</CardTitle>
-              <CardDescription>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="min-w-0 w-full">
+              <CardTitle className="truncate">Horários de Funcionamento</CardTitle>
+              <CardDescription className="whitespace-normal break-words">
                 Configure os dias e horários em que o restaurante aceita pedidos.
               </CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={addHour}>
+            <Button variant="outline" size="sm" onClick={addHour} className="shrink-0">
               <Plus className="mr-2 h-4 w-4" /> Adicionar Horário
             </Button>
           </div>
@@ -317,8 +317,8 @@ export function ConfiguracoesClient({
             ) : (
               <div className="space-y-4">
                 {hours.map((hour, index) => (
-                  <div key={index} className="flex flex-col sm:flex-row gap-4 items-end border p-4 rounded-md">
-                    <div className="space-y-2 flex-1">
+                  <div key={index} className="flex flex-col sm:flex-row gap-4 items-start sm:items-end border p-4 rounded-md">
+                    <div className="space-y-2 w-full sm:flex-1">
                       <Label>Dia da Semana</Label>
                       <select 
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -330,27 +330,31 @@ export function ConfiguracoesClient({
                         ))}
                       </select>
                     </div>
-                    <div className="space-y-2 flex-1">
-                      <Label>Abertura</Label>
-                      <Input 
-                        type="time" 
-                        value={hour.openTime}
-                        onChange={(e) => updateHour(index, 'openTime', e.target.value)}
-                        required
-                      />
+                    <div className="grid grid-cols-[1fr_1fr_auto] w-full sm:w-auto sm:flex-1 gap-2 sm:gap-4 items-end min-w-0">
+                      <div className="space-y-2 min-w-0">
+                        <Label className="text-xs sm:text-sm">Abertura</Label>
+                        <Input 
+                          type="time" 
+                          value={hour.openTime}
+                          onChange={(e) => updateHour(index, 'openTime', e.target.value)}
+                          required
+                          className="w-full px-1 sm:px-3"
+                        />
+                      </div>
+                      <div className="space-y-2 min-w-0">
+                        <Label className="text-xs sm:text-sm">Fechamento</Label>
+                        <Input 
+                          type="time" 
+                          value={hour.closeTime}
+                          onChange={(e) => updateHour(index, 'closeTime', e.target.value)}
+                          required
+                          className="w-full px-1 sm:px-3"
+                        />
+                      </div>
+                      <Button type="button" variant="destructive" size="icon" className="shrink-0 mb-[1px]" onClick={() => removeHour(index)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="space-y-2 flex-1">
-                      <Label>Fechamento</Label>
-                      <Input 
-                        type="time" 
-                        value={hour.closeTime}
-                        onChange={(e) => updateHour(index, 'closeTime', e.target.value)}
-                        required
-                      />
-                    </div>
-                    <Button type="button" variant="destructive" size="icon" onClick={() => removeHour(index)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
                 ))}
               </div>
@@ -363,128 +367,84 @@ export function ConfiguracoesClient({
       {/* Live Preview Section */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse shrink-0" />
           <h2 className="text-xl font-bold tracking-tight">Prévia em Tempo Real (Loja)</h2>
         </div>
         
-        <Card className="overflow-hidden border-none shadow-2xl bg-gray-100 p-0 md:p-4">
-          <div className="bg-white rounded-[2rem] overflow-hidden shadow-xl w-full border relative">
-            {/* Mock Header (Optional, but gives browser context) */}
-            <header className="h-14 border-b bg-white/70 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-50">
-              <div className="flex items-center gap-2">
-                <div className="bg-red-600 p-1.5 rounded-full">
-                  <StoreIcon className="h-3 w-3 text-white" />
-                </div>
-                <span className="font-black text-sm tracking-tighter">{settings.name || "Sua Loja"}</span>
-              </div>
-              <div className="h-8 w-8 rounded-lg border flex items-center justify-center">
-                <div className="h-4 w-4 rounded-full bg-gray-200" />
-              </div>
-            </header>
-
-            <div className="bg-gray-50 pb-12 flex flex-col">
-              {/* Hero Banner Section (Truly Full Width) */}
-              <div className="relative w-full h-[200px] md:h-[280px] overflow-hidden group">
+        <Card>
+          <CardContent className="p-0 sm:p-6">
+            <div className="border rounded-none sm:rounded-lg overflow-hidden bg-white">
+              {/* Hero Banner */}
+              <div className="w-full h-32 sm:h-48 relative bg-slate-100">
                 {settings.bannerUrl ? (
                   <img 
                     src={settings.bannerUrl} 
                     alt="Banner" 
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
+                    className="w-full h-full object-cover" 
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-red-600 via-red-500 to-orange-500" />
+                  <div className="w-full h-full bg-gradient-to-br from-red-600 to-orange-500" />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
               </div>
 
-              {/* Store Info Card (Floating Premium) */}
-              <div className="relative -mt-16 md:-mt-24 z-10 bg-white/90 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-white/50 p-6 flex flex-col md:flex-row items-center md:items-start gap-6 max-w-4xl w-[calc(100%-2rem)] mx-auto ring-1 ring-black/5 transition-all duration-500 hover:shadow-[0_30px_70px_rgba(0,0,0,0.18)]">
+              {/* Store Info */}
+              <div className="p-4 sm:p-6 relative">
                 {/* Logo */}
-                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-8 border-white bg-white shadow-2xl overflow-hidden flex-shrink-0 -mt-16 md:-mt-20 transition-transform duration-500 hover:scale-105">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white bg-white shadow-md overflow-hidden absolute -top-10 sm:-top-12 left-4 sm:left-6">
                   {settings.logoUrl ? (
                     <img src={settings.logoUrl} alt={settings.name} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white">
-                      <span className="text-4xl font-black tracking-tighter">{settings.name?.[0] || "R"}</span>
+                    <div className="w-full h-full bg-red-600 flex items-center justify-center text-white font-bold text-xl">
+                      {settings.name?.[0] || "R"}
                     </div>
                   )}
                 </div>
 
-                {/* Store Details */}
-                <div className="flex-1 text-center md:text-left space-y-4">
-                  <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                    <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tighter">
-                      {settings.name || "Rei do Picadão"}
+                <div className="mt-12 sm:mt-14 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
+                    <h1 className="text-2xl font-bold text-gray-900 truncate">
+                      {settings.name || "Sua Loja"}
                     </h1>
                     <div className={cn(
-                      "self-center md:self-auto px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-colors",
+                      "inline-flex w-fit px-3 py-1 rounded-full text-xs font-semibold shrink-0",
                       openStatus 
-                        ? "bg-green-50 text-green-600 border-green-200" 
-                        : "bg-red-50 text-red-600 border-red-200"
+                        ? "bg-green-100 text-green-700" 
+                        : "bg-red-100 text-red-700"
                     )}>
-                      {openStatus ? "• Aberto agora" : "• Fechado"}
+                      {openStatus ? "Aberto agora" : "Fechado"}
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap justify-center md:justify-start items-center gap-x-6 gap-y-3 text-xs text-gray-500 font-medium">
-                    <div className="flex items-center gap-2">
-                      <div className="bg-yellow-50 p-1.5 rounded-lg">
-                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                      </div>
-                      <span className="font-bold text-gray-900">4.8</span>
-                      <span className="opacity-60">(500+ avaliações)</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Star className="h-4 w-4 text-yellow-500 shrink-0" />
+                      <span className="truncate">4.8 (500+ avaliações)</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="bg-blue-50 p-1.5 rounded-lg">
-                        <Clock className="h-4 w-4 text-blue-500" />
-                      </div>
-                      <span className="text-gray-900 font-bold">35-45 min</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Clock className="h-4 w-4 text-blue-500 shrink-0" />
+                      <span className="truncate">35-45 min</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="bg-purple-50 p-1.5 rounded-lg">
-                        <Bike className="h-4 w-4 text-purple-500" />
-                      </div>
-                      <span className="text-gray-900 font-bold">Não entregamos acima de {settings.deliveryRadiusKm || "10"} km</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <MapPin className="h-4 w-4 text-orange-500 shrink-0" />
+                      <span className="truncate">{settings.address || "Endereço não informado"}</span>
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Bike className="h-4 w-4 text-purple-500 shrink-0" />
+                      <span className="truncate">Taxa: R$ {parseFloat(settings.deliveryFeeKm || "0").toFixed(2)}/km</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-gray-500 font-medium justify-center md:justify-start">
-                    <div className="bg-orange-50 p-1.5 rounded-lg">
-                      <MapPin className="h-4 w-4 text-orange-500" />
-                    </div>
-                    <span className="text-gray-900 font-bold line-clamp-1">{settings.address || "Endereço não informado"}</span>
+                  <div className="bg-gray-50 p-3 rounded-lg flex items-center gap-2 border">
+                    <span className="text-sm text-gray-500 font-medium">Pedido Mínimo:</span>
+                    <span className="font-semibold">R$ {parseFloat(settings.minOrder || "0").toFixed(2)}</span>
                   </div>
-
-                  <div className="pt-2 flex items-center justify-center md:justify-start">
-                    <div className="bg-gray-100/50 px-4 py-2 rounded-2xl flex items-center gap-3 border border-gray-200/50">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Pedido Mínimo</span>
-                      <span className="text-base font-black text-gray-900">R$ {parseFloat(settings.minOrder || "0").toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Mock Categories */}
-              <div className="mt-8 px-4 md:px-8 overflow-hidden max-w-5xl mx-auto w-full">
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                  {['Destaques', 'Porções', 'Bebidas', 'Sobremesas'].map((cat, i) => (
-                    <div 
-                      key={cat} 
-                      className={cn(
-                        "px-6 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap border transition-all",
-                        i === 0 ? "bg-red-600 text-white border-red-600 shadow-lg shadow-red-200" : "bg-white text-gray-500 border-gray-200"
-                      )}
-                    >
-                      {cat}
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
-          </div>
-          <p className="text-center text-[10px] text-muted-foreground mt-4 font-medium uppercase tracking-widest opacity-60">
-            Esta é uma representação visual atualizada de como sua loja aparece para os clientes
-          </p>
+            <p className="text-center text-[10px] text-muted-foreground mt-4 font-medium uppercase tracking-widest opacity-60">
+              Esta é uma representação visual atualizada de como sua loja aparece para os clientes
+            </p>
+          </CardContent>
         </Card>
       </div>
     </div>

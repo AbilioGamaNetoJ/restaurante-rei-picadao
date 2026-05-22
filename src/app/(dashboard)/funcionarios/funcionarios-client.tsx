@@ -174,7 +174,7 @@ export function FuncionariosClient({ users, currentRole }: { users: any[], curre
     <div className="space-y-4">
       {/* Filtros e info */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant={filter === 'all' ? 'default' : 'outline'}
             size="sm"
@@ -203,19 +203,106 @@ export function FuncionariosClient({ users, currentRole }: { users: any[], curre
         </p>
       </div>
 
-      {/* Tabela */}
-      <div className="rounded-md border bg-white">
-        <div className="overflow-x-auto">
+      {/* Tabela / Lista Mobile */}
+      <div className="rounded-md border bg-white overflow-hidden">
+        
+        {/* Mobile View (Cards) */}
+        <div className="block lg:hidden divide-y">
+          {filteredUsers.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground text-sm">
+              Nenhum funcionário encontrado.
+            </div>
+          ) : (
+            filteredUsers.map((user) => (
+              <div key={user.id} className="p-4 space-y-4 hover:bg-slate-50 transition-colors">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-10 w-10 relative rounded-full overflow-hidden bg-slate-100 flex-shrink-0">
+                      {user.imageUrl ? (
+                        <Image src={user.imageUrl} alt={user.firstName || ''} fill className="object-cover" sizes="40px" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-medium">
+                          {user.firstName?.charAt(0) || user.email?.charAt(0) || '?'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">
+                        {user.firstName} {user.lastName}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleOpenEdit(user)}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    {currentRole === 'dono' && user.role !== 'dono' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-700"
+                        onClick={() => handleDelete(user.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Cargo</p>
+                    <p className="font-medium">{user.position || '-'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Setor</p>
+                    <p className="font-medium">{user.department || '-'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Salário</p>
+                    <p className="font-medium">{user.salary ? <span className="text-emerald-600">{formatSalary(user.salary)}</span> : '-'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Acesso & Status</p>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge className={getRoleBadge(user.role)}>
+                        {getRoleLabel(user.role)}
+                      </Badge>
+                      {user.isActive !== false ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          Ativo
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                          Inativo
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop View (Table) */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b">
+            <thead className="bg-slate-50 border-b whitespace-nowrap">
               <tr>
-                <th className="text-left p-4 font-semibold">Nome</th>
-                <th className="text-left p-4 font-semibold">Cargo</th>
-                <th className="text-left p-4 font-semibold">Setor</th>
-                <th className="text-left p-4 font-semibold">Acesso</th>
-                <th className="text-left p-4 font-semibold">Salário</th>
-                <th className="text-left p-4 font-semibold">Status</th>
-                <th className="text-left p-4 font-semibold">Ações</th>
+                <th className="text-left px-4 py-3 font-semibold">Nome</th>
+                <th className="text-left px-4 py-3 font-semibold">Cargo</th>
+                <th className="text-left px-4 py-3 font-semibold">Setor</th>
+                <th className="text-left px-4 py-3 font-semibold">Acesso</th>
+                <th className="text-left px-4 py-3 font-semibold">Salário</th>
+                <th className="text-left px-4 py-3 font-semibold">Status</th>
+                <th className="text-left px-4 py-3 font-semibold w-[100px]">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -228,7 +315,7 @@ export function FuncionariosClient({ users, currentRole }: { users: any[], curre
               ) : (
                 filteredUsers.map((user) => (
                   <tr key={user.id} className="border-b hover:bg-slate-50">
-                    <td className="p-4">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 relative rounded-full overflow-hidden bg-slate-100 flex-shrink-0">
                           {user.imageUrl ? (
@@ -240,32 +327,36 @@ export function FuncionariosClient({ users, currentRole }: { users: any[], curre
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-medium truncate">
+                          <p className="font-medium truncate max-w-[200px]">
                             {user.firstName} {user.lastName}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[200px]">{user.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="p-4">
-                      {user.position || <span className="text-muted-foreground">-</span>}
+                    <td className="px-4 py-3">
+                      <div className="truncate max-w-[150px]">
+                        {user.position || <span className="text-muted-foreground">-</span>}
+                      </div>
                     </td>
-                    <td className="p-4">
-                      {user.department || <span className="text-muted-foreground">-</span>}
+                    <td className="px-4 py-3">
+                      <div className="truncate max-w-[150px]">
+                        {user.department || <span className="text-muted-foreground">-</span>}
+                      </div>
                     </td>
-                    <td className="p-4">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <Badge className={getRoleBadge(user.role)}>
                         {getRoleLabel(user.role)}
                       </Badge>
                     </td>
-                    <td className="p-4">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {user.salary ? (
                         <span className="font-semibold text-emerald-600">{formatSalary(user.salary)}</span>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
                     </td>
-                    <td className="p-4">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {user.isActive !== false ? (
                         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                           Ativo
@@ -276,7 +367,7 @@ export function FuncionariosClient({ users, currentRole }: { users: any[], curre
                         </Badge>
                       )}
                     </td>
-                    <td className="p-4">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <Button
                           variant="ghost"
@@ -337,7 +428,7 @@ export function FuncionariosClient({ users, currentRole }: { users: any[], curre
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="position">Cargo</Label>
                 <Input

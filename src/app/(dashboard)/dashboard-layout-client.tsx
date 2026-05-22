@@ -140,7 +140,7 @@ export function DashboardLayoutClient({
         </button>
       </div>
 
-      <div className="flex flex-col min-h-screen w-full relative">
+      <div className="flex flex-col min-h-screen w-full relative min-w-0">
         {/* Header - Desktop & Mobile */}
         <header className="flex h-14 items-center gap-4 border-b border-slate-200 bg-white/80 backdrop-blur-md px-4 lg:h-[60px] lg:px-6 sticky top-0 z-10 transition-all">
           <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
@@ -186,7 +186,7 @@ export function DashboardLayoutClient({
           </button>
         </div>
 
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-slate-50/50 w-full overflow-x-hidden">
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-slate-50/50 w-full overflow-x-hidden min-w-0">
           {children}
         </main>
       </div>

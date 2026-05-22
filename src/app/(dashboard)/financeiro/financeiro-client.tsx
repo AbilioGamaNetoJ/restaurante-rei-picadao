@@ -220,10 +220,10 @@ export function FinanceiroClient({ initialExpenses }: { initialExpenses: any[] }
       </div>
 
       {/* Header com mês e botão nova despesa */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
           <h2 className="text-xl font-semibold">Despesas</h2>
-          <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
+          <div className="flex items-center justify-between gap-2 bg-slate-100 rounded-lg p-1 w-full sm:w-auto">
             <Button
               variant="ghost"
               size="icon"
@@ -248,7 +248,7 @@ export function FinanceiroClient({ initialExpenses }: { initialExpenses: any[] }
 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger nativeButton={true} render={
-            <Button onClick={handleOpenNew}>
+            <Button onClick={handleOpenNew} className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" /> Nova Despesa
             </Button>
           } />
@@ -332,41 +332,43 @@ export function FinanceiroClient({ initialExpenses }: { initialExpenses: any[] }
               </div>
             ) : (
               filteredExpenses.map((expense) => (
-                <div key={expense.id} className="flex items-center justify-between p-4 hover:bg-slate-50">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium">{expense.description}</h3>
+                <div key={expense.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-slate-50 gap-4 sm:gap-0">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-medium truncate">{expense.description}</h3>
                       <Badge className={getCategoryColor(expense.category)}>
                         {getCategoryLabel(expense.category)}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-sm text-muted-foreground mt-1 truncate">
                       Registrado por: {expense.createdBy} em {new Date(expense.createdAt).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="font-semibold text-red-500 text-lg">
+                  <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto border-t sm:border-0 pt-3 sm:pt-0">
+                    <span className="font-semibold text-red-500 text-lg whitespace-nowrap">
                       -{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(expense.amount))}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleOpenEdit(expense)}
-                      title="Editar"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-500"
-                      onClick={() => handleDelete(expense.id)}
-                      disabled={isPending}
-                      title="Excluir"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleOpenEdit(expense)}
+                        title="Editar"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500"
+                        onClick={() => handleDelete(expense.id)}
+                        disabled={isPending}
+                        title="Excluir"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))
