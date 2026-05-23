@@ -15,14 +15,15 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ShoppingCart, Minus, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { Separator } from "@/components/ui/separator";
+
 
 export function CartDrawer({ trigger }: { trigger?: React.ReactElement }) {
   const [mounted, setMounted] = useState(false);
   const { items, removeItem, updateQuantity, getTotal, isDrawerOpen, setDrawerOpen } = useCartStore();
 
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
   }, []);
   
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -69,6 +70,7 @@ export function CartDrawer({ trigger }: { trigger?: React.ReactElement }) {
                   <div key={item.id} className="flex gap-4">
                     {item.imageUrl && (
                       <div className="h-16 w-16 rounded-md overflow-hidden flex-shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img 
                           src={item.imageUrl} 
                           alt={item.name} 
@@ -98,6 +100,7 @@ export function CartDrawer({ trigger }: { trigger?: React.ReactElement }) {
                           {item.addons.map(addon => (
                             <div key={addon.id} className="flex items-center gap-2">
                               {addon.imageUrl && (
+                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img 
                                   src={addon.imageUrl} 
                                   alt={addon.name} 

@@ -20,9 +20,14 @@ async function getStoreStatus() {
 }
 
 export default async function StorePage() {
-  const allCategories = await db.query.categories.findMany({
+  const fetchedCategories = await db.query.categories.findMany({
     orderBy: [asc(categories.sortOrder)],
   });
+
+  // Filtra a categoria "Bebidas" e derivados para não exibir na página do cliente
+  const allCategories = fetchedCategories.filter(
+    (c) => !c.name.toLowerCase().includes('bebida')
+  );
 
   const allProducts = await db.query.products.findMany({
     where: eq(products.isAvailable, true),

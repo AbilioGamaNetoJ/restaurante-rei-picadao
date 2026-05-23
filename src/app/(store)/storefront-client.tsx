@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { CartDrawer } from "@/components/store/cart-drawer";
 import { useCartStore } from "@/stores/cart-store";
 import { cn } from "@/lib/utils";
-import { MapPin } from "lucide-react";
+import { MapPin, Search, X } from "lucide-react";
 import { 
   ShoppingCart, 
   Clock, 
@@ -36,7 +36,16 @@ interface StorefrontClientProps {
 export function StorefrontClient({ categories, products, hours, settings }: StorefrontClientProps) {
   const [mounted, setMounted] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   
+  const searchResults = searchQuery.trim().length > 0
+    ? products.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
+  const isSearching = searchQuery.trim().length > 0;
+
   const featuredProducts = products.filter(p => p.isFeatured);
   const displayCategories = featuredProducts.length > 0 
     ? [{ id: 'featured', name: 'Destaques', slug: 'destaques', sortOrder: -1, isVirtual: true } as Category, ...categories]
@@ -50,27 +59,49 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
     setMounted(true);
   }, []);
 
-  // Intersection Observer to update active category on scroll
+  // Intersection Observer replaced with scroll listener for more precise tracking, especially at the bottom
   useEffect(() => {
     if (!mounted) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveCategory(entry.target.id);
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 180; // offset for header + padding
+      const isAtBottom = (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 50;
+
+      let currentActiveId = displayCategories[0]?.id;
+
+      for (let i = displayCategories.length - 1; i >= 0; i--) {
+        const categoryId = displayCategories[i].id;
+        const element = document.getElementById(categoryId);
+        if (element) {
+          if (isAtBottom && i === displayCategories.length - 1 && element.getBoundingClientRect().top < window.innerHeight) {
+            currentActiveId = categoryId;
+            break;
           }
-        });
-      },
-      { threshold: 0.3, rootMargin: "-100px 0px -50% 0px" }
-    );
+          if (element.offsetTop <= scrollPosition) {
+            currentActiveId = categoryId;
+            break;
+          }
+        }
+      }
 
-    Object.values(categoryRefs.current).forEach((ref) => {
-      if (ref) observer.observe(ref);
-    });
+      setActiveCategory(currentActiveId);
+    };
 
-    return () => observer.disconnect();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Check on mount
+
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [mounted, displayCategories]);
+
+  // Auto-scroll the horizontal category navigation to keep active category in view
+  useEffect(() => {
+    if (activeCategory) {
+      const btn = document.getElementById(`btn-category-${activeCategory}`);
+      if (btn) {
+        btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [activeCategory]);
 
   const scrollToCategory = (categoryId: string) => {
     const element = document.getElementById(categoryId);
@@ -191,6 +222,30 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
         </div>
       </div>
 
+      {/* Search Bar */}
+      <div className="max-w-4xl w-[calc(100%-2rem)] mx-auto -mt-4">
+        <div className="relative flex items-center">
+          <Search className="absolute left-4 h-5 w-5 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Buscar no cardápio..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-12 pr-12 py-4 rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm text-gray-900 font-medium placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent shadow-sm transition-all"
+          />
+          {searchQuery ? (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          ) : (
+            <Search className="absolute right-4 h-5 w-5 text-gray-400 pointer-events-none" />
+          )}
+        </div>
+      </div>
+
       {/* Sticky Category ScrollBar (Premium Glass) */}
       <div className="sticky top-[64px] z-40 w-full bg-white/80 backdrop-blur-xl border-b py-3 shadow-sm">
         <ScrollArea className="w-full whitespace-nowrap">
@@ -198,6 +253,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
             {displayCategories.map((category) => (
               <Button
                 key={category.id}
+                id={`btn-category-${category.id}`}
                 variant="ghost"
                 className={cn(
                   "rounded-2xl transition-all px-8 h-11 font-bold text-sm",
@@ -205,7 +261,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
                     ? "bg-red-600 text-white hover:bg-red-700 hover:text-white shadow-lg shadow-red-200 scale-105" 
                     : "text-gray-500 hover:bg-gray-100/80 hover:text-gray-900"
                 )}
-                onClick={() => scrollToCategory(category.id)}
+                onClick={() => { setSearchQuery(""); scrollToCategory(category.id); }}
               >
                 {category.name}
               </Button>
@@ -217,6 +273,57 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
 
       {/* Menu Sections */}
       <div className="space-y-20 mt-8">
+        {isSearching ? (
+          <section className="scroll-mt-40 px-4 md:px-8">
+            <div className="flex flex-col gap-1 mb-8">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-2 bg-red-600 rounded-full" />
+                <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tighter">
+                  Resultados para &quot;{searchQuery}&quot;
+                </h2>
+              </div>
+              <p className="text-gray-400 text-sm font-medium ml-6">
+                {searchResults.length} {searchResults.length === 1 ? 'item encontrado' : 'itens encontrados'}
+              </p>
+            </div>
+
+            {searchResults.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {searchResults.map((product) => (
+                  <ProductCard
+                    key={`search-${product.id}`}
+                    product={product}
+                    onClick={() => setSelectedProduct({
+                      id: product.id,
+                      name: product.name,
+                      description: product.description,
+                      price: product.price,
+                      imageUrl: product.imageUrl,
+                      addons: product.addons,
+                      servesPeople: product.servesPeople,
+                      originalPrice: product.originalPrice
+                    })}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
+                <div className="text-6xl">🍽️</div>
+                <p className="text-2xl font-black text-gray-900">Nenhum prato encontrado</p>
+                <p className="text-gray-400 font-medium">
+                  Tente buscar por outro nome ou categoria
+                </p>
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="mt-2 text-red-600 font-bold hover:underline"
+                >
+                  Limpar busca
+                </button>
+              </div>
+            )}
+          </section>
+        ) : (
+        <>
         {featuredProducts.length > 0 && (
           <section 
             id="featured"
@@ -304,6 +411,8 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
             </section>
           );
         })}
+        </>
+        )}
       </div>
 
       <ProductDetailModal 

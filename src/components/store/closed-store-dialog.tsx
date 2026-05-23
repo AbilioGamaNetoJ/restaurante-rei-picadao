@@ -21,7 +21,8 @@ export function ClosedStoreDialog({ isOpenStatus }: ClosedStoreDialogProps) {
 
   useEffect(() => {
     if (!isOpenStatus) {
-      setOpen(true);
+      const timer = setTimeout(() => setOpen(true), 0);
+      return () => clearTimeout(timer);
     }
   }, [isOpenStatus]);
 

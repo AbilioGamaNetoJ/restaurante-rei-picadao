@@ -185,6 +185,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
         
         <div className="grid gap-4 py-4">
           {product.imageUrl && (
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img src={product.imageUrl} alt={product.name} className="w-full h-48 object-cover rounded-md" />
           )}
           
@@ -231,6 +232,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                       <div key={item.addon.id} className="flex items-center justify-between border-b pb-2 gap-2">
                         <div className="flex items-center gap-3">
                           {item.addon.imageUrl && (
+                            /* eslint-disable-next-line @next/next/no-img-element */
                             <img 
                               src={item.addon.imageUrl} 
                               alt={item.addon.name} 
