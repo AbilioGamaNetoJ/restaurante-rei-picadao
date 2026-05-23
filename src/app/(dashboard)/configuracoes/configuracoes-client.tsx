@@ -228,7 +228,7 @@ export function ConfiguracoesClient({
                     }}
                     content={{
                       button: "Enviar Logo",
-                      allowedContent: "Imagem até 4MB"
+                      allowedContent: "Imagem até 8MB"
                     }}
                   />
                 </div>
@@ -239,7 +239,7 @@ export function ConfiguracoesClient({
                 <Label>Banner da Página de Vendas</Label>
                 <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors">
                   {settings.bannerUrl ? (
-                    <div className="relative group w-full aspect-[21/9] max-w-[400px]">
+                    <div className="relative group w-full aspect-[16/5] max-w-[400px]">
                       <img 
                         src={settings.bannerUrl} 
                         alt="Banner" 
@@ -248,34 +248,48 @@ export function ConfiguracoesClient({
                       <button 
                         onClick={() => setSettings({...settings, bannerUrl: ''})}
                         className="absolute -top-3 -right-3 bg-red-600 text-white p-2 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-all hover:scale-110 active:scale-95"
+                        type="button"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   ) : (
-                    <div className="w-full aspect-[21/9] max-w-[400px] flex items-center justify-center border-2 border-dashed rounded-xl text-muted-foreground bg-white text-center p-4">
-                      Selecione uma imagem panorâmica para o banner de fundo
+                    <div className="w-full aspect-[16/5] max-w-[400px] flex items-center justify-center border-2 border-dashed rounded-xl text-muted-foreground bg-white text-center p-4">
+                      Selecione uma imagem para o banner de fundo
                     </div>
                   )}
-                  <UploadButton
-                    endpoint="productImage"
-                    onClientUploadComplete={(res) => {
-                      if (!res || res.length === 0) return;
-                      setSettings({...settings, bannerUrl: res[0].ufsUrl || res[0].url});
-                      toast.success("Banner enviado com sucesso");
-                    }}
-                    onUploadError={(error: Error) => {
-                      toast.error(`Erro: ${error.message}`);
-                    }}
-                    appearance={{
-                      button: "bg-red-600 hover:bg-red-700 ut-uploading:cursor-not-allowed rounded-xl h-10 px-6 text-sm font-bold shadow-md shadow-red-100",
-                      allowedContent: "text-[10px] font-medium text-muted-foreground mt-2"
-                    }}
-                    content={{
-                      button: "Escolher Banner",
-                      allowedContent: "Recomendado: 1200x400px"
-                    }}
-                  />
+                  {settings.bannerUrl ? (
+                    <div className="flex flex-col items-center">
+                      <Button 
+                        type="button"
+                        onClick={() => toast.error("Exclua a foto atual clicando na lixeira antes de enviar uma nova")}
+                        className="bg-red-600 hover:bg-red-700 rounded-xl h-10 px-6 text-sm font-bold shadow-md shadow-red-100"
+                      >
+                        Escolher Banner
+                      </Button>
+                      <p className="text-[10px] font-medium text-muted-foreground mt-2">Recomendado: 1920x600px (até 8MB)</p>
+                    </div>
+                  ) : (
+                    <UploadButton
+                      endpoint="productImage"
+                      onClientUploadComplete={(res) => {
+                        if (!res || res.length === 0) return;
+                        setSettings({...settings, bannerUrl: res[0].ufsUrl || res[0].url});
+                        toast.success("Banner enviado com sucesso");
+                      }}
+                      onUploadError={(error: Error) => {
+                        toast.error(`Erro: ${error.message}`);
+                      }}
+                      appearance={{
+                        button: "bg-red-600 hover:bg-red-700 ut-uploading:cursor-not-allowed rounded-xl h-10 px-6 text-sm font-bold shadow-md shadow-red-100",
+                        allowedContent: "text-[10px] font-medium text-muted-foreground mt-2"
+                      }}
+                      content={{
+                        button: "Escolher Banner",
+                        allowedContent: "Recomendado: 1920x600px (até 8MB)"
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -372,76 +386,101 @@ export function ConfiguracoesClient({
         </div>
         
         <Card>
-          <CardContent className="p-0 sm:p-6">
-            <div className="border rounded-none sm:rounded-lg overflow-hidden bg-white">
-              {/* Hero Banner */}
-              <div className="w-full h-32 sm:h-48 relative bg-slate-100">
-                {settings.bannerUrl ? (
-                  <img 
-                    src={settings.bannerUrl} 
-                    alt="Banner" 
-                    className="w-full h-full object-cover" 
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-red-600 to-orange-500" />
-                )}
-              </div>
+          <CardContent className="p-0 overflow-hidden">
+            {/* Wrapper com fundo cinza claro para simular a página da loja */}
+            <div className="bg-gray-50 p-4 sm:p-6 rounded-xl">
+              <div className="border rounded-xl overflow-visible bg-transparent">
 
-              {/* Store Info */}
-              <div className="p-4 sm:p-6 relative">
-                {/* Logo */}
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white bg-white shadow-md overflow-hidden absolute -top-10 sm:-top-12 left-4 sm:left-6">
-                  {settings.logoUrl ? (
-                    <img src={settings.logoUrl} alt={settings.name} className="w-full h-full object-cover" />
+                {/* Hero Banner — mesma altura da loja real */}
+                <div className="relative w-full h-[180px] sm:h-[280px] overflow-hidden rounded-t-xl group">
+                  {settings.bannerUrl ? (
+                    <img
+                      src={settings.bannerUrl}
+                      alt="Banner"
+                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                    />
                   ) : (
-                    <div className="w-full h-full bg-red-600 flex items-center justify-center text-white font-bold text-xl">
-                      {settings.name?.[0] || "R"}
-                    </div>
+                    <div className="w-full h-full bg-gradient-to-br from-red-600 via-red-500 to-orange-500" />
                   )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent rounded-t-xl" />
                 </div>
 
-                <div className="mt-12 sm:mt-14 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
-                    <h1 className="text-2xl font-bold text-gray-900 truncate">
-                      {settings.name || "Sua Loja"}
-                    </h1>
-                    <div className={cn(
-                      "inline-flex w-fit px-3 py-1 rounded-full text-xs font-semibold shrink-0",
-                      openStatus 
-                        ? "bg-green-100 text-green-700" 
-                        : "bg-red-100 text-red-700"
-                    )}>
-                      {openStatus ? "Aberto agora" : "Fechado"}
-                    </div>
+                {/* Store Info Card — mesmo estilo flutuante da loja real */}
+                <div className="relative -mt-12 sm:-mt-20 z-10 bg-white/90 backdrop-blur-2xl rounded-[1.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-white/50 p-4 sm:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-5 max-w-4xl mx-auto w-[calc(100%-1.5rem)] sm:w-[calc(100%-3rem)] ring-1 ring-black/5">
+
+                  {/* Logo — posicionada igual à loja real */}
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full border-[6px] border-white bg-white shadow-xl overflow-hidden flex-shrink-0 -mt-14 sm:-mt-20 transition-transform duration-500 hover:scale-105">
+                    {settings.logoUrl ? (
+                      <img src={settings.logoUrl} alt={settings.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white">
+                        <span className="text-3xl font-black tracking-tighter">{settings.name?.[0] || "R"}</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Star className="h-4 w-4 text-yellow-500 shrink-0" />
-                      <span className="truncate">4.8 (500+ avaliações)</span>
+                  {/* Store Details */}
+                  <div className="flex-1 text-center sm:text-left space-y-3 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                      <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tighter truncate">
+                        {settings.name || "Sua Loja"}
+                      </h1>
+                      <div className={cn(
+                        "self-center sm:self-auto px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-colors shrink-0",
+                        openStatus
+                          ? "bg-green-50 text-green-600 border-green-200"
+                          : "bg-red-50 text-red-600 border-red-200"
+                      )}>
+                        {openStatus ? "• Aberto agora" : "• Fechado"}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Clock className="h-4 w-4 text-blue-500 shrink-0" />
-                      <span className="truncate">35-45 min</span>
-                    </div>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <MapPin className="h-4 w-4 text-orange-500 shrink-0" />
-                      <span className="truncate">{settings.address || "Endereço não informado"}</span>
-                    </div>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Bike className="h-4 w-4 text-purple-500 shrink-0" />
-                      <span className="truncate">Taxa: R$ {parseFloat(settings.deliveryFeeKm || "0").toFixed(2)}/km</span>
-                    </div>
-                  </div>
 
-                  <div className="bg-gray-50 p-3 rounded-lg flex items-center gap-2 border">
-                    <span className="text-sm text-gray-500 font-medium">Pedido Mínimo:</span>
-                    <span className="font-semibold">R$ {parseFloat(settings.minOrder || "0").toFixed(2)}</span>
+                    <div className="flex flex-wrap justify-center sm:justify-start items-center gap-x-5 gap-y-2 text-xs text-gray-500 font-medium">
+                      <div className="flex items-center gap-1.5">
+                        <div className="bg-yellow-50 p-1 rounded-md">
+                          <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                        </div>
+                        <span className="font-bold text-gray-900">4.8</span>
+                        <span className="opacity-60">(500+ avaliações)</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="bg-blue-50 p-1 rounded-md">
+                          <Clock className="h-3.5 w-3.5 text-blue-500" />
+                        </div>
+                        <span className="text-gray-900 font-bold">35-45 min</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="bg-purple-50 p-1 rounded-md">
+                          <Bike className="h-3.5 w-3.5 text-purple-500" />
+                        </div>
+                        <span className="text-gray-900 font-bold truncate">
+                          Taxa: R$ {parseFloat(settings.deliveryFeeKm || "0").toFixed(2)}/km
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium justify-center sm:justify-start">
+                      <div className="bg-orange-50 p-1 rounded-md shrink-0">
+                        <MapPin className="h-3.5 w-3.5 text-orange-500" />
+                      </div>
+                      <span className="text-gray-900 font-bold truncate">{settings.address || "Endereço não informado"}</span>
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-center sm:justify-start">
+                      <div className="bg-gray-100/50 px-4 py-2 rounded-xl flex items-center gap-2 border border-gray-200/50">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Pedido Mínimo</span>
+                        <span className="text-base font-black text-gray-900">R$ {parseFloat(settings.minOrder || "0").toFixed(2)}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
+
+                {/* Espaçamento inferior do card */}
+                <div className="h-6" />
               </div>
             </div>
-            <p className="text-center text-[10px] text-muted-foreground mt-4 font-medium uppercase tracking-widest opacity-60">
+
+            <p className="text-center text-[10px] text-muted-foreground py-3 font-medium uppercase tracking-widest opacity-60">
               Esta é uma representação visual atualizada de como sua loja aparece para os clientes
             </p>
           </CardContent>
