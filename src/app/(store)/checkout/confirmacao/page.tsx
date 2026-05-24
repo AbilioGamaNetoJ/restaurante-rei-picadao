@@ -149,7 +149,7 @@ function ConfirmacaoContent() {
 
               return (
                 <div key={key} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10 transition-colors duration-300 ease-in-out" className={bgColor}>
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10 transition-colors duration-300 ease-in-out ${bgColor}`}>
                     <Icon className="w-4 h-4" />
                   </div>
                   

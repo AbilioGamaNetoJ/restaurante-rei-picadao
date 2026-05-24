@@ -1,19 +1,16 @@
 'use client';
 
-import * as React from 'react';
-
-
 import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cart-store";
 import { toast } from "sonner";
+import { createPortal } from "react-dom";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
@@ -149,7 +146,23 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
     });
 
     useCartStore.getState().setDrawerOpen(true);
-    toast.success(`${product.name} adicionado ao carrinho!`);
+    toast.custom((t) => {
+      if (typeof document === 'undefined') return null;
+      return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
+          <div className="bg-green-50/80 backdrop-blur-md border-2 border-green-500 shadow-2xl rounded-2xl p-6 min-h-[160px] w-full max-w-[300px] flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-200 pointer-events-auto">
+            <div className="bg-green-100 p-3 rounded-full mb-3">
+              <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-xl font-bold text-green-900 leading-tight mb-1">{product.name}</p>
+            <p className="text-green-700 font-medium text-sm">foi adicionado ao carrinho!</p>
+          </div>
+        </div>,
+        document.body
+      );
+    });
     onClose();
     // Reset state
     setQuantity(1);
@@ -175,27 +188,30 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{product.name}</DialogTitle>
-        </DialogHeader>
-        
-        <div className="grid gap-4 py-4">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-0">
+        <div className="grid gap-4">
           {product.imageUrl && (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={product.imageUrl} alt={product.name} className="w-full h-48 object-cover rounded-md" />
+            <img src={product.imageUrl} alt={product.name} className="w-full aspect-video object-cover rounded-t-xl" />
           )}
-          
-          <p className="text-sm text-gray-500">{product.description}</p>
+
+          <div className="px-5 space-y-1.5">
+            <DialogTitle className="text-xl font-bold leading-snug">{product.name}</DialogTitle>
+            {product.description && (
+              <p className="text-sm text-muted-foreground leading-relaxed">{product.description}</p>
+            )}
+          </div>
           
           {product.servesPeople && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-gray-50 p-2 rounded-md">
-              <span>👥</span>
-              <span>Este item serve {product.servesPeople} {product.servesPeople > 1 ? 'pessoas' : 'pessoa'}</span>
+            <div className="px-5">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-gray-50 p-2 rounded-md">
+                <span>👥</span>
+                <span>Este item serve {product.servesPeople} {product.servesPeople > 1 ? 'pessoas' : 'pessoa'}</span>
+              </div>
             </div>
           )}
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 px-5">
             <div className="font-bold text-2xl text-primary">R$ {productPrice.toFixed(2)}</div>
             {product.originalPrice && (
               <div className="text-base text-muted-foreground line-through">
@@ -206,7 +222,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
 
           {/* Addons Section */}
           {product.addons && product.addons.length > 0 && (
-            <div className="space-y-4 mt-4">
+            <div className="space-y-4 px-5">
               {(() => {
                 const grouped = product.addons.reduce<Record<string, typeof product.addons>>((acc, item) => {
                   const catName = item.addon.category?.name || 'Adicionais';
@@ -256,16 +272,24 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                           <div className="flex items-center space-x-2">
                             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, -1)}>-</Button>
                             <span className="text-sm font-medium min-w-[20px] text-center">{selectedAddons[item.addon.id]}</span>
-                            {!(catName === 'Bebidas' && bebidasTotalQty >= 2) && (
-                              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, 1)}>+</Button>
-                            )}
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleAddonQuantityChange(item.addon.id, 1)}
+                              disabled={catName === 'Bebidas' && bebidasTotalQty >= 2}
+                            >+</Button>
                           </div>
                         ) : (
-                          !(catName === 'Bebidas' && bebidasTotalQty >= 2) && (
-                            <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, true, catName)} className="h-8">
-                              Adicionar
-                            </Button>
-                          )
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8"
+                            onClick={() => handleAddonToggle(item.addon.id, true, catName)}
+                            disabled={catName === 'Bebidas' && bebidasTotalQty >= 2}
+                          >
+                            Adicionar
+                          </Button>
                         )}
                       </div>
                     ))}
@@ -275,7 +299,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
             </div>
           )}
 
-          <div className="space-y-2 mt-4">
+          <div className="space-y-2 px-5">
             <Label htmlFor="comment">Observações</Label>
             <Input
               id="comment"
@@ -285,7 +309,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
             />
           </div>
 
-          <div className="flex items-center justify-between mt-6">
+          <div className="flex items-center justify-between px-5 pb-2">
             <div className="flex items-center space-x-4">
               <Button variant="outline" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</Button>
               <span className="font-medium">{quantity}</span>
@@ -297,7 +321,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="mx-0 mb-0">
           <Button onClick={handleAddToCart} className="w-full">Adicionar ao Carrinho</Button>
         </DialogFooter>
       </DialogContent>
