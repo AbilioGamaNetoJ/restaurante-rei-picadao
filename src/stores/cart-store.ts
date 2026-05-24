@@ -66,9 +66,14 @@ export const useCartStore = create<CartState>()(
         })),
       updateQuantity: (id, quantity) =>
         set((state) => ({
-          items: state.items.map((item) =>
-            item.id === id ? { ...item, quantity } : item
-          ),
+          items: state.items.map((item) => {
+            if (item.id !== id) return item;
+            const addonsTotal = item.addons.reduce(
+              (sum, addon) => sum + addon.price * addon.quantity,
+              0
+            );
+            return { ...item, quantity, subtotal: item.price * quantity + addonsTotal };
+          }),
         })),
       clearCart: () => set({ items: [], checkoutData: null }),
       setCheckoutData: (data) => set({ checkoutData: data }),

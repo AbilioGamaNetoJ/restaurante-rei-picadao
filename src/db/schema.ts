@@ -180,6 +180,10 @@ export const orderItemsRelations = relations(orderItems, ({ one, many }) => ({
     fields: [orderItems.orderId],
     references: [orders.id],
   }),
+  product: one(products, {
+    fields: [orderItems.productId],
+    references: [products.id],
+  }),
   addons: many(orderItemAddons),
 }));
 

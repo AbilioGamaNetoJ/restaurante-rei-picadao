@@ -20,6 +20,11 @@ export async function GET(req: Request) {
       with: {
         items: {
           with: {
+            product: {
+              columns: {
+                imageUrl: true
+              }
+            },
             addons: true
           }
         }

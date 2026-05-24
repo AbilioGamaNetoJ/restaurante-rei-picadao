@@ -127,11 +127,10 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
       ?.filter(a => selectedAddons[a.addon.id])
       .map(a => {
         const price = parseFloat(a.addon.price);
-        const multiplier = (a.addon.category?.name === 'Bebidas' && isBebidasDouble) ? 2 : 1;
         return {
           id: a.addon.id,
           name: a.addon.name,
-          price: price * multiplier,
+          price: price,
           quantity: selectedAddons[a.addon.id],
           imageUrl: a.addon.imageUrl,
         };
@@ -164,17 +163,15 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
     }
     return acc;
   }, 0) || 0;
-  const isBebidasDouble = bebidasTotalQty >= 2;
 
   const productPrice = parseFloat(product.price);
   const addonsTotal = product.addons?.reduce((acc, a) => {
     const q = selectedAddons[a.addon.id] || 0;
     const price = parseFloat(a.addon.price);
-    const multiplier = (a.addon.category?.name === 'Bebidas' && isBebidasDouble) ? 2 : 1;
-    return acc + (price * multiplier * q);
+    return acc + (price * q);
   }, 0) || 0;
-  
-  const total = (productPrice + addonsTotal) * quantity;
+
+  const total = productPrice * quantity + addonsTotal;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -259,12 +256,16 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                           <div className="flex items-center space-x-2">
                             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, -1)}>-</Button>
                             <span className="text-sm font-medium min-w-[20px] text-center">{selectedAddons[item.addon.id]}</span>
-                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, 1)}>+</Button>
+                            {!(catName === 'Bebidas' && bebidasTotalQty >= 2) && (
+                              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, 1)}>+</Button>
+                            )}
                           </div>
                         ) : (
-                          <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, true, catName)} className="h-8">
-                            Adicionar
-                          </Button>
+                          !(catName === 'Bebidas' && bebidasTotalQty >= 2) && (
+                            <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, true, catName)} className="h-8">
+                              Adicionar
+                            </Button>
+                          )
                         )}
                       </div>
                     ))}

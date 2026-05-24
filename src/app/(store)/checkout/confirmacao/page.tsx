@@ -1,25 +1,84 @@
 'use client';
 
 import * as React from 'react';
-
-
-import { useEffect, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useCartStore } from '@/stores/cart-store';
 import { Button } from '@/components/ui/button';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Clock, CreditCard, ChefHat, PackageCheck, Bike, CheckCircle2, XCircle } from 'lucide-react';
 import Link from 'next/link';
+import { getOrderStatus, confirmOrderDelivery } from './actions';
+import { toast } from 'sonner';
+
+type OrderStatus = 'pending' | 'paid' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
+
+const statusConfig: Record<OrderStatus, { label: string; icon: React.ElementType; step: number }> = {
+  pending: { label: 'Aguardando Pagamento', icon: Clock, step: 1 },
+  paid: { label: 'Pagamento Confirmado', icon: CreditCard, step: 2 },
+  preparing: { label: 'Em Preparo', icon: ChefHat, step: 3 },
+  ready: { label: 'Pronto para Entrega', icon: PackageCheck, step: 4 },
+  delivering: { label: 'Saiu para Entrega', icon: Bike, step: 5 },
+  delivered: { label: 'Pedido Entregue', icon: CheckCircle2, step: 6 },
+  cancelled: { label: 'Pedido Cancelado', icon: XCircle, step: 0 },
+};
 
 function ConfirmacaoContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
   const router = useRouter();
   const clearCart = useCartStore((state) => state.clearCart);
+  
+  const [status, setStatus] = useState<OrderStatus>('pending');
+  const [loading, setLoading] = useState(true);
+  const [confirmingDelivery, setConfirmingDelivery] = useState(false);
 
   useEffect(() => {
     // Ao chegar na tela de confirmação, limpa o carrinho
     clearCart();
   }, [clearCart]);
+
+  useEffect(() => {
+    if (!orderId) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchStatus = async () => {
+      const currentStatus = await getOrderStatus(orderId);
+      if (currentStatus) {
+        setStatus(currentStatus as OrderStatus);
+      }
+      setLoading(false);
+    };
+
+    fetchStatus();
+
+    // Polling a cada 5 segundos
+    const interval = setInterval(fetchStatus, 5000);
+    return () => clearInterval(interval);
+  }, [orderId]);
+
+  const handleConfirmDelivery = async () => {
+    if (!orderId) return;
+    
+    setConfirmingDelivery(true);
+    const result = await confirmOrderDelivery(orderId);
+    if (result.success) {
+      setStatus('delivered');
+      toast.success('Que ótimo! Agradecemos a preferência.');
+    } else {
+      toast.error('Não foi possível confirmar a entrega.');
+    }
+    setConfirmingDelivery(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="container max-w-2xl mx-auto py-20 px-4 text-center">
+        <p>Carregando dados do pedido...</p>
+      </div>
+    );
+  }
 
   if (!orderId) {
     return (
@@ -37,27 +96,105 @@ function ConfirmacaoContent() {
 
   // Format order short ID (e.g., first segment of UUID)
   const shortId = orderId.split('-')[0].toUpperCase();
+  const currentStep = statusConfig[status]?.step || 0;
+  const isCancelled = status === 'cancelled';
 
   return (
-    <div className="container max-w-2xl mx-auto py-20 px-4 text-center">
-      <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
-      <h1 className="text-3xl font-bold mb-4">Pedido Confirmado!</h1>
-      <p className="text-lg mb-2">
-        Agradecemos pela preferência.
-      </p>
-      <div className="bg-muted p-4 rounded-lg my-6 inline-block">
-        <p className="text-sm text-muted-foreground uppercase tracking-wider mb-1">
-          Número do Pedido
-        </p>
-        <p className="text-2xl font-bold font-mono">#{shortId}</p>
+    <div className="container max-w-2xl mx-auto py-10 px-4">
+      <div className="text-center mb-10">
+        {isCancelled ? (
+          <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+        ) : currentStep === 6 ? (
+          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+        ) : (
+          <Clock className="w-16 h-16 text-primary mx-auto mb-4 animate-pulse" />
+        )}
+        
+        <h1 className="text-3xl font-bold mb-2">
+          {isCancelled ? 'Pedido Cancelado' : 'Acompanhe seu Pedido'}
+        </h1>
+        
+        <div className="bg-muted px-4 py-2 rounded-lg inline-block mt-4">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+            Número do Pedido
+          </p>
+          <p className="text-xl font-bold font-mono">#{shortId}</p>
+        </div>
       </div>
-      <p className="text-muted-foreground mb-10 max-w-md mx-auto">
-        Assim que o pagamento for processado pelo nosso sistema, começaremos o preparo do seu pedido. Você pode acompanhar o status caso tenhamos o seu contato via WhatsApp.
-      </p>
-      
-      <Button render={<Link href="/" />} size="lg" nativeButton={false}>
-        Voltar ao Cardápio
-      </Button>
+
+      {!isCancelled && (
+        <div className="bg-card border rounded-xl p-6 mb-8 shadow-sm">
+          <h2 className="font-semibold text-lg mb-6">Status do Preparo</h2>
+          
+          <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-muted before:to-transparent">
+            {Object.entries(statusConfig).filter(([k]) => k !== 'cancelled').map(([key, config]) => {
+              const stepStatus = key as OrderStatus;
+              const stepNumber = config.step;
+              const Icon = config.icon;
+              
+              const isCompleted = currentStep >= stepNumber;
+              const isCurrent = currentStep === stepNumber;
+              
+              let bgColor = "bg-muted text-muted-foreground border-background";
+              let textColor = "text-muted-foreground";
+              
+              if (isCompleted) {
+                bgColor = "bg-primary text-primary-foreground border-primary";
+                textColor = "text-foreground font-medium";
+              }
+              if (isCurrent) {
+                bgColor = "bg-primary text-primary-foreground border-primary ring-4 ring-primary/20";
+                textColor = "text-primary font-bold";
+              }
+
+              return (
+                <div key={key} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10 transition-colors duration-300 ease-in-out" className={bgColor}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  
+                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border bg-background shadow-sm transition-all duration-300 ease-in-out">
+                    <p className={textColor}>{config.label}</p>
+                    {isCurrent && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {stepNumber === 1 && "Aguardando confirmação do pagamento..."}
+                        {stepNumber === 2 && "Pagamento recebido! Logo começaremos o preparo."}
+                        {stepNumber === 3 && "Sua comida está sendo preparada com carinho."}
+                        {stepNumber === 4 && "Pronto! Aguardando o entregador coletar."}
+                        {stepNumber === 5 && "O entregador está a caminho do seu endereço."}
+                        {stepNumber === 6 && "Pedido entregue com sucesso! Bom apetite."}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {status === 'delivering' && (
+        <div className="bg-primary/10 border border-primary/20 p-6 rounded-xl text-center mb-8">
+          <h3 className="font-bold text-lg mb-2">Seu pedido chegou?</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Confirme o recebimento para nos ajudar a finalizar a entrega no sistema.
+          </p>
+          <Button 
+            size="lg" 
+            onClick={handleConfirmDelivery}
+            disabled={confirmingDelivery}
+            className="w-full sm:w-auto"
+          >
+            {confirmingDelivery ? 'Confirmando...' : 'Recebi meu pedido!'}
+          </Button>
+        </div>
+      )}
+
+      <div className="text-center">
+        <Button render={<Link href="/" />} variant="outline" size="lg" nativeButton={false}>
+          Voltar ao Cardápio
+        </Button>
+      </div>
     </div>
   );
 }

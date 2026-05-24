@@ -10,6 +10,11 @@ export default async function PedidosPage() {
     with: {
       items: {
         with: {
+          product: {
+            columns: {
+              imageUrl: true
+            }
+          },
           addons: true
         }
       }

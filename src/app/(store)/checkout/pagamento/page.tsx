@@ -89,33 +89,42 @@ export default function PagamentoPage() {
         <div className="space-y-4">
           {items.map((item) => (
             <div key={item.id} className="flex justify-between items-start border-b pb-4 last:border-0 last:pb-0">
-              <div>
-                <p className="font-medium">
-                  {item.quantity}x {item.name}
-                </p>
-                {item.addons.length > 0 && (
-                  <div className="mt-2 ml-4 space-y-2">
-                    {item.addons.map((addon) => (
-                      <div key={addon.id} className="flex items-center gap-2">
-                        {addon.imageUrl && (
-                          <img 
-                            src={addon.imageUrl} 
-                            alt={addon.name} 
-                            className="w-8 h-8 rounded object-cover flex-shrink-0" 
-                          />
-                        )}
-                        <span className="text-sm text-muted-foreground">
-                          {addon.quantity}x {addon.name} (+ {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(addon.price * addon.quantity)})
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+              <div className="flex gap-3">
+                {item.imageUrl && (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.name}
+                    className="w-12 h-12 rounded-md object-cover flex-shrink-0"
+                  />
                 )}
-                {item.comment && (
-                  <p className="text-sm text-muted-foreground mt-1 italic">
-                    Obs: {item.comment}
+                <div>
+                  <p className="font-medium">
+                    {item.quantity}x {item.name}
                   </p>
-                )}
+                  {item.addons.length > 0 && (
+                    <div className="mt-2 ml-4 space-y-2">
+                      {item.addons.map((addon) => (
+                        <div key={addon.id} className="flex items-center gap-2">
+                          {addon.imageUrl && (
+                            <img 
+                              src={addon.imageUrl} 
+                              alt={addon.name} 
+                              className="w-8 h-8 rounded object-cover flex-shrink-0" 
+                            />
+                          )}
+                          <span className="text-sm text-muted-foreground">
+                            {addon.quantity}x {addon.name} (+ {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(addon.price * addon.quantity)})
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {item.comment && (
+                    <p className="text-sm text-muted-foreground mt-1 italic">
+                      Obs: {item.comment}
+                    </p>
+                  )}
+                </div>
               </div>
               <p className="font-medium">
                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.subtotal)}

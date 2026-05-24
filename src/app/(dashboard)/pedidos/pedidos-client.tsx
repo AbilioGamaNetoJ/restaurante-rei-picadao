@@ -15,7 +15,7 @@ import { updateOrderStatus, deleteOrder } from './actions';
 type OrderStatus = 'pending' | 'paid' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
 
 const statusMap: Record<OrderStatus, { label: string; color: string; next?: { status: OrderStatus; label: string } }> = {
-  pending: { label: 'Aguardando Pagamento', color: 'bg-yellow-500' },
+  pending: { label: 'Aguardando Pagamento', color: 'bg-yellow-500', next: { status: 'paid', label: 'Marcar como Pago' } },
   paid: { label: 'Pago', color: 'bg-blue-500', next: { status: 'preparing', label: 'Iniciar Preparo' } },
   preparing: { label: 'Preparando', color: 'bg-purple-500', next: { status: 'ready', label: 'Pronto para Entrega' } },
   ready: { label: 'Pronto', color: 'bg-orange-500', next: { status: 'delivering', label: 'Saiu para Entrega' } },
@@ -125,9 +125,18 @@ export function PedidosClient({ initialOrders }: { initialOrders: any[] }) {
           <div className="space-y-2">
             {order.items.map((item: any) => (
               <div key={item.id} className="text-sm">
-                <div className="flex justify-between font-medium">
-                  <span>{item.quantity}x {item.productName}</span>
-                  <span>R$ {Number(item.subtotal).toFixed(2)}</span>
+                <div className="flex justify-between font-medium items-start">
+                  <div className="flex gap-2">
+                    {item.product?.imageUrl && (
+                      <img 
+                        src={item.product.imageUrl} 
+                        alt={item.productName} 
+                        className="w-10 h-10 rounded-md object-cover flex-shrink-0 border border-muted" 
+                      />
+                    )}
+                    <span className="mt-0.5">{item.quantity}x {item.productName}</span>
+                  </div>
+                  <span className="mt-0.5">R$ {Number(item.subtotal).toFixed(2)}</span>
                 </div>
                 {item.addons?.length > 0 && (
                   <div className="pl-4 text-xs text-muted-foreground space-y-1 mt-1">
