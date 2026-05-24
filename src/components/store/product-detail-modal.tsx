@@ -147,20 +147,24 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
 
     useCartStore.getState().setDrawerOpen(true);
     toast.custom((t) => {
-      if (typeof document === 'undefined') return null;
-      return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
-          <div className="bg-green-50/80 backdrop-blur-md border-2 border-green-500 shadow-2xl rounded-2xl p-6 min-h-[160px] w-full max-w-[300px] flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-200 pointer-events-auto">
-            <div className="bg-green-100 p-3 rounded-full mb-3">
-              <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <p className="text-xl font-bold text-green-900 leading-tight mb-1">{product.name}</p>
-            <p className="text-green-700 font-medium text-sm">foi adicionado ao carrinho!</p>
-          </div>
-        </div>,
-        document.body
+      if (typeof document === 'undefined') return <></>;
+      return (
+        <>
+          {createPortal(
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
+              <div className="bg-green-50/80 backdrop-blur-md border-2 border-green-500 shadow-2xl rounded-2xl p-6 min-h-[160px] w-full max-w-[300px] flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-200 pointer-events-auto">
+                <div className="bg-green-100 p-3 rounded-full mb-3">
+                  <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p className="text-xl font-bold text-green-900 leading-tight mb-1">{product.name}</p>
+                <p className="text-green-700 font-medium text-sm">foi adicionado ao carrinho!</p>
+              </div>
+            </div>,
+            document.body
+          )}
+        </>
       );
     });
     onClose();
