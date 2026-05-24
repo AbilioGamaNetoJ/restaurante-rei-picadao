@@ -91,22 +91,15 @@ export async function createCheckout(orderId: string, customerId: string, value:
     const paymentBody: any = {
       customer: customerId,
       billingType: 'UNDEFINED',
-      billingTypes: ['CREDIT_CARD', 'DEBIT_CARD'],
       value,
       dueDate: dueDate.toISOString().split('T')[0],
       description,
       externalReference: orderId,
     };
 
-    // Asaas requires HTTPS for callbacks. If localhost/HTTP, we omit to prevent API error 400.
-    if (appUrl.startsWith('https')) {
-      paymentBody.callback = {
-        successUrl: `${appUrl}/checkout/confirmacao?orderId=${orderId}`,
-        autoRedirect: true,
-      };
-    } else {
-      console.warn('Asaas: Skipping successUrl callback because NEXT_PUBLIC_APP_URL is not HTTPS. Redirect will not work on localhost.');
-    }
+    // Callback removido temporariamente para evitar erro 400 do Asaas
+    // O Asaas exige que a URL do successUrl esteja idêntica à cadastrada na conta comercial.
+    // Em produção (Vercel), isso costuma falhar se não estiver configurado corretamente no painel do Asaas.
 
     const res = await fetch(`${ASAAS_API_URL}/payments`, {
       method: 'POST',
