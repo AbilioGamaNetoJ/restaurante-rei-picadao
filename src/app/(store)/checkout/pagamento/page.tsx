@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/stores/cart-store';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { CreditCard, QrCode } from 'lucide-react';
 
 export default function PagamentoPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function PagamentoPage() {
   const [loading, setLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [mounted, setMounted] = React.useState(false);
+  const [billingType, setBillingType] = useState<'PIX' | 'CREDIT_CARD'>('PIX');
 
   React.useEffect(() => {
     setMounted(true);
@@ -49,6 +51,7 @@ export default function PagamentoPage() {
           subtotal,
           deliveryFee,
           total,
+          billingType,
         }),
       });
 
@@ -60,10 +63,6 @@ export default function PagamentoPage() {
         return;
       }
 
-      // Limpar o carrinho (opcional, pode ser feito apenas após a confirmação via webhook,
-      // mas como o usuário está indo pro checkout externo, vamos limpar agora para evitar que
-      // ele volte e faça pedido duplicado. Ou melhor, limpar na página de confirmação).
-      
       // Redirecionar para o link de checkout do Asaas
       if (data.checkoutUrl) {
         setRedirecting(true);
@@ -152,6 +151,39 @@ export default function PagamentoPage() {
             {checkoutData.addressNeighborhood} - {checkoutData.addressCity}/{checkoutData.addressState}
           </p>
           <p className="text-sm">CEP: {checkoutData.addressZip}</p>
+        </div>
+      </div>
+
+      <div className="bg-muted/50 p-6 rounded-lg mb-6">
+        <h2 className="text-lg font-semibold mb-4">Forma de Pagamento</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button
+            onClick={() => setBillingType('PIX')}
+            className={`flex flex-col items-center justify-center p-6 border-2 rounded-xl transition-all ${
+              billingType === 'PIX'
+                ? 'border-primary bg-primary/5'
+                : 'border-transparent bg-background hover:border-primary/50'
+            }`}
+          >
+            <QrCode className={`w-8 h-8 mb-2 ${billingType === 'PIX' ? 'text-primary' : 'text-muted-foreground'}`} />
+            <span className={`font-semibold ${billingType === 'PIX' ? 'text-primary' : 'text-foreground'}`}>
+              Pix
+            </span>
+          </button>
+          
+          <button
+            onClick={() => setBillingType('CREDIT_CARD')}
+            className={`flex flex-col items-center justify-center p-6 border-2 rounded-xl transition-all ${
+              billingType === 'CREDIT_CARD'
+                ? 'border-primary bg-primary/5'
+                : 'border-transparent bg-background hover:border-primary/50'
+            }`}
+          >
+            <CreditCard className={`w-8 h-8 mb-2 ${billingType === 'CREDIT_CARD' ? 'text-primary' : 'text-muted-foreground'}`} />
+            <span className={`font-semibold ${billingType === 'CREDIT_CARD' ? 'text-primary' : 'text-foreground'}`}>
+              Cartão (Crédito/Débito)
+            </span>
+          </button>
         </div>
       </div>
 

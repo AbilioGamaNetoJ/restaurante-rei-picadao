@@ -70,7 +70,14 @@ export async function POST(req: Request) {
       checkoutData.customerName,
       checkoutData.customerEmail,
       checkoutData.customerPhone,
-      checkoutData.customerCpfCnpj
+      checkoutData.customerCpfCnpj,
+      {
+        addressZip: checkoutData.addressZip,
+        addressStreet: checkoutData.addressStreet,
+        addressNumber: checkoutData.addressNumber,
+        addressComplement: checkoutData.addressComplement,
+        addressNeighborhood: checkoutData.addressNeighborhood,
+      }
     );
 
     if (!customer) {
@@ -79,11 +86,13 @@ export async function POST(req: Request) {
 
     // 4. Create Checkout Link in Asaas first
     const description = `Pedido #${orderId.split('-')[0].toUpperCase()} - Rei do Picadão`;
+    const billingType = body.billingType || 'UNDEFINED'; // Default to UNDEFINED if not sent
     const checkoutUrl = await createCheckout(
       orderId,
       customer.id,
       total,
-      description
+      description,
+      billingType
     );
 
     if (!checkoutUrl) {

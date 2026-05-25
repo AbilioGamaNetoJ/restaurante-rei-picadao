@@ -1,12 +1,22 @@
-const ASAAS_API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://api.asaas.com/v3' 
-  : 'https://sandbox.asaas.com/api/v3';
+const ASAAS_API_URL = 'https://sandbox.asaas.com/api/v3';
 
 interface AsaasCustomer {
   id: string;
 }
 
-export async function createAsaasCustomer(name: string, email: string, phone: string, cpfCnpj: string): Promise<AsaasCustomer | null> {
+export async function createAsaasCustomer(
+  name: string, 
+  email: string, 
+  phone: string, 
+  cpfCnpj: string,
+  addressData?: {
+    addressZip: string;
+    addressStreet: string;
+    addressNumber: string;
+    addressComplement?: string;
+    addressNeighborhood: string;
+  }
+): Promise<AsaasCustomer | null> {
   const apiKey = process.env.ASAAS_API_KEY;
   
   if (!apiKey) {
@@ -39,24 +49,35 @@ export async function createAsaasCustomer(name: string, email: string, phone: st
     if (searchRes.ok) {
       const searchData = await searchRes.json();
       if (searchData.data && searchData.data.length > 0) {
+        // Customer exists, we could update the address here, but returning ID is fine for now
         return { id: searchData.data[0].id };
       }
     }
 
     // Create new customer
+    const requestBody: any = {
+      name,
+      email,
+      phone: cleanPhone,
+      mobilePhone: cleanPhone,
+      cpfCnpj: cleanCpfCnpj,
+    };
+
+    if (addressData) {
+      requestBody.postalCode = addressData.addressZip.replace(/\D/g, '');
+      requestBody.address = addressData.addressStreet;
+      requestBody.addressNumber = addressData.addressNumber;
+      if (addressData.addressComplement) requestBody.complement = addressData.addressComplement;
+      requestBody.province = addressData.addressNeighborhood;
+    }
+
     const res = await fetch(`${ASAAS_API_URL}/customers`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'access_token': apiKey,
       },
-      body: JSON.stringify({
-        name,
-        email,
-        phone: cleanPhone,
-        mobilePhone: cleanPhone,
-        cpfCnpj: cleanCpfCnpj,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const data = await res.json();
@@ -72,7 +93,13 @@ export async function createAsaasCustomer(name: string, email: string, phone: st
   }
 }
 
-export async function createCheckout(orderId: string, customerId: string, value: number, description: string): Promise<string | null> {
+export async function createCheckout(
+  orderId: string, 
+  customerId: string, 
+  value: number, 
+  description: string,
+  billingType: 'PIX' | 'CREDIT_CARD' | 'UNDEFINED' = 'UNDEFINED'
+): Promise<string | null> {
   const apiKey = process.env.ASAAS_API_KEY;
   if (!apiKey) throw new Error("ASAAS_API_KEY not configured.");
   
@@ -90,16 +117,16 @@ export async function createCheckout(orderId: string, customerId: string, value:
 
     const paymentBody: any = {
       customer: customerId,
-      billingType: 'UNDEFINED',
+      billingType,
       value,
       dueDate: dueDate.toISOString().split('T')[0],
       description,
       externalReference: orderId,
+      callback: {
+        successUrl: `${appUrl}/checkout/confirmacao?orderId=${orderId}`,
+        autoRedirect: true
+      }
     };
-
-    // Callback removido temporariamente para evitar erro 400 do Asaas
-    // O Asaas exige que a URL do successUrl esteja idêntica à cadastrada na conta comercial.
-    // Em produção (Vercel), isso costuma falhar se não estiver configurado corretamente no painel do Asaas.
 
     const res = await fetch(`${ASAAS_API_URL}/payments`, {
       method: 'POST',
