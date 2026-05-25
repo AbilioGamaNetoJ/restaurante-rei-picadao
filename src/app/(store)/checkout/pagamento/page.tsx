@@ -20,14 +20,6 @@ export default function PagamentoPage() {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return (
-      <div className="container max-w-2xl mx-auto py-10 px-4 text-center">
-        <p>Carregando resumo do pedido...</p>
-      </div>
-    );
-  }
-
   React.useEffect(() => {
     // Aguarda hidratar
     const timer = setTimeout(() => {
@@ -39,6 +31,14 @@ export default function PagamentoPage() {
     }, 100);
     return () => clearTimeout(timer);
   }, [router, redirecting]);
+
+  if (!mounted) {
+    return (
+      <div className="container max-w-2xl mx-auto py-10 px-4 text-center">
+        <p>Carregando resumo do pedido...</p>
+      </div>
+    );
+  }
 
   if (!checkoutData) {
     return null;
