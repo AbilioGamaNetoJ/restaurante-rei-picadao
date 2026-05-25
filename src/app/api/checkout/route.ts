@@ -153,9 +153,8 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('Error creating checkout:', error);
     return NextResponse.json({ 
-      error: 'Erro interno ao processar o pedido.',
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message || 'Erro interno ao processar o pedido.',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }, { status: 500 });
   }
 }
