@@ -50,16 +50,16 @@ export async function POST(req: Request) {
     });
 
     if (activeOrder) {
-      if (activeOrder.status === 'pending' && activeOrder.asaasCheckoutUrl) {
+      if (activeOrder.status === 'pending') {
+        // Cancel the abandoned pending order to allow the new one
+        await db.update(orders)
+          .set({ status: 'cancelled' as any })
+          .where(eq(orders.id, activeOrder.id));
+      } else {
         return NextResponse.json({ 
-          checkoutUrl: activeOrder.asaasCheckoutUrl,
-          message: 'Você já possui um pedido aguardando pagamento. Redirecionando...' 
-        });
+          error: 'Você já possui um pedido em andamento sendo preparado ou entregue. Aguarde a conclusão para realizar outro.' 
+        }, { status: 400 });
       }
-
-      return NextResponse.json({ 
-        error: 'Você já possui um pedido em andamento. Aguarde a conclusão ou cancelamento para realizar outro.' 
-      }, { status: 400 });
     }
 
     // 2. Generate Order ID upfront

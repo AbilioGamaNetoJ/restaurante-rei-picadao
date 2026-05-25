@@ -30,7 +30,7 @@ export default function PagamentoPage() {
 
   if (items.length === 0 || !checkoutData) {
     if (redirecting) return null; // Não redirecionar se estivermos indo para o Asaas
-    router.push('/carrinho');
+    router.push('/'); // Redireciona para home pois não existe página /carrinho (é um modal)
     return null;
   }
 
@@ -66,7 +66,8 @@ export default function PagamentoPage() {
       // Redirecionar para o link de checkout do Asaas
       if (data.checkoutUrl) {
         setRedirecting(true);
-        clearCart();
+        // NOTA: Não limpamos o carrinho aqui. Ele será limpo na página de confirmação.
+        // Assim, se o cliente clicar em "voltar" no navegador, o carrinho não se perde.
         window.location.href = data.checkoutUrl;
       } else {
         toast.error('Link de pagamento não recebido.');
