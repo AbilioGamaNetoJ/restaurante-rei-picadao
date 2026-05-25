@@ -110,7 +110,7 @@ export async function createCheckout(
   });
 
   const dueDate = new Date();
-  dueDate.setDate(dueDate.getDate() + 1); // 1 day to expire
+  // dueDate.setDate(dueDate.getDate() + 1); // Removido: Restaurantes precisam de vencimento no mesmo dia
 
   try {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
