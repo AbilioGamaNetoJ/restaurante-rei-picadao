@@ -45,11 +45,16 @@ export default function EnderecoPage() {
       }
     }
 
-    // Redirecionar se o carrinho estiver vazio após a montagem
-    if (items.length === 0) {
-      router.push('/carrinho');
-    }
-  }, [items.length, router]);
+    // Se o carrinho estiver vazio (e já tiver hidratado), redireciona para a home
+    // Aguarda um pequeno delay para garantir que o zustand hidratou os dados do localStorage
+    const timer = setTimeout(() => {
+      if (useCartStore.persist.hasHydrated() && useCartStore.getState().items.length === 0) {
+        router.push('/');
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [router]);
 
   if (!mounted) {
     return (

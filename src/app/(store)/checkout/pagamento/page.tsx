@@ -28,9 +28,19 @@ export default function PagamentoPage() {
     );
   }
 
-  if (items.length === 0 || !checkoutData) {
-    if (redirecting) return null; // Não redirecionar se estivermos indo para o Asaas
-    router.push('/'); // Redireciona para home pois não existe página /carrinho (é um modal)
+  React.useEffect(() => {
+    // Aguarda hidratar
+    const timer = setTimeout(() => {
+      if (useCartStore.persist.hasHydrated() && useCartStore.getState().items.length === 0) {
+        if (!redirecting) {
+          router.push('/');
+        }
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [router, redirecting]);
+
+  if (!checkoutData) {
     return null;
   }
 
