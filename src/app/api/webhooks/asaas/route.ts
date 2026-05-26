@@ -37,14 +37,35 @@ export async function POST(req: Request) {
     }
 
     if (newStatus) {
-      await db.update(orders)
-        .set({ 
-          status: newStatus as any,
-          paymentId: payment.id,
-          paymentMethod: payment.billingType,
-          paymentStatus: payment.status
-        })
-        .where(eq(orders.id, orderId));
+      // Try to update the order, with retry for race condition resilience
+      let updated = false;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const result = await db.update(orders)
+          .set({ 
+            status: newStatus as any,
+            paymentId: payment.id,
+            paymentMethod: payment.billingType,
+            paymentStatus: payment.status
+          })
+          .where(eq(orders.id, orderId))
+          .returning({ id: orders.id });
+
+        if (result.length > 0) {
+          updated = true;
+          break;
+        }
+
+        // Order not found yet — might still be inserting (race condition)
+        // Wait briefly and retry
+        if (attempt < 2) {
+          console.warn(`[webhook] Order ${orderId} not found (attempt ${attempt + 1}/3), retrying in 2s...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+
+      if (!updated) {
+        console.error(`[webhook] Order ${orderId} not found after 3 attempts for event ${event}`);
+      }
         
       revalidatePath('/dashboard');
       revalidatePath('/pedidos');
@@ -58,3 +79,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+

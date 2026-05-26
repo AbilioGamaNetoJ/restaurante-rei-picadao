@@ -7,7 +7,7 @@ import { useCartStore } from '@/stores/cart-store';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Clock, CreditCard, ChefHat, PackageCheck, Bike, CheckCircle2, XCircle } from 'lucide-react';
 import Link from 'next/link';
-import { getOrderStatus, confirmOrderDelivery } from './actions';
+import { confirmOrderDelivery } from './actions';
 import { toast } from 'sonner';
 
 type OrderStatus = 'pending' | 'paid' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
@@ -44,16 +44,24 @@ function ConfirmacaoContent() {
     }
 
     const fetchStatus = async () => {
-      const currentStatus = await getOrderStatus(orderId);
-      if (currentStatus) {
-        setStatus(currentStatus as OrderStatus);
+      try {
+        // Use the check-status endpoint which queries Asaas directly as fallback
+        const res = await fetch(`/api/orders/check-status?orderId=${orderId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status) {
+            setStatus(data.status as OrderStatus);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching order status:', error);
       }
       setLoading(false);
     };
 
     fetchStatus();
 
-    // Polling a cada 5 segundos
+    // Poll every 5 seconds — endpoint checks Asaas API if status is still pending
     const interval = setInterval(fetchStatus, 5000);
     return () => clearInterval(interval);
   }, [orderId]);

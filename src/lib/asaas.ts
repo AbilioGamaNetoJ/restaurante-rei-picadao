@@ -1,7 +1,14 @@
-const ASAAS_API_URL = 'https://sandbox.asaas.com/api/v3';
+const ASAAS_API_URL = process.env.ASAAS_API_URL || 'https://sandbox.asaas.com/api/v3';
 
 interface AsaasCustomer {
   id: string;
+}
+
+interface AsaasPayment {
+  id: string;
+  status: string;
+  billingType: string;
+  externalReference: string;
 }
 
 export async function createAsaasCustomer(
@@ -171,3 +178,44 @@ export async function createCheckout(
     throw error;
   }
 }
+
+/**
+ * Query Asaas API directly for payment status by externalReference (orderId).
+ * Used as fallback when webhook doesn't arrive or arrives before order exists.
+ */
+export async function getPaymentByExternalReference(orderId: string): Promise<AsaasPayment | null> {
+  const apiKey = process.env.ASAAS_API_KEY;
+  if (!apiKey) throw new Error("ASAAS_API_KEY not configured.");
+
+  try {
+    const res = await fetch(
+      `${ASAAS_API_URL}/payments?externalReference=${encodeURIComponent(orderId)}`,
+      {
+        headers: { 'access_token': apiKey },
+        cache: 'no-store',
+      }
+    );
+
+    if (!res.ok) {
+      console.error('Error fetching Asaas payment:', await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    if (data.data && data.data.length > 0) {
+      const payment = data.data[0];
+      return {
+        id: payment.id,
+        status: payment.status,
+        billingType: payment.billingType,
+        externalReference: payment.externalReference,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error in getPaymentByExternalReference:', error);
+    return null;
+  }
+}
+

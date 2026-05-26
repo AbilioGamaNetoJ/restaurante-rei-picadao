@@ -84,29 +84,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Erro ao registrar cliente no gateway de pagamento.' }, { status: 500 });
     }
 
-    // 4. Create Checkout Link in Asaas first
-    const description = `Pedido #${orderId.split('-')[0].toUpperCase()} - Rei do Picadão`;
-    const billingType = body.billingType || 'UNDEFINED'; // Default to UNDEFINED if not sent
-    let checkoutUrl = await createCheckout(
-      orderId,
-      customer.id,
-      total,
-      description,
-      billingType
-    );
-
-    if (!checkoutUrl) {
-      return NextResponse.json({ error: 'Erro ao gerar link de pagamento no Asaas.' }, { status: 500 });
-    }
-
-    // Force autoRedirect parameter directly on the URL as per Asaas documentation
-    if (checkoutUrl && !checkoutUrl.includes('autoRedirect')) {
-      checkoutUrl = checkoutUrl.includes('?') 
-        ? `${checkoutUrl}&autoRedirect=true` 
-        : `${checkoutUrl}?autoRedirect=true`;
-    }
-
-    // 5. Save order to database (neon-http does not support transactions)
+    // 4. Save order to database FIRST (before Asaas payment)
+    // This prevents the race condition where the Asaas webhook arrives
+    // before the order exists in the DB (especially with instant PIX confirmation)
     await db.insert(orders).values({
       id: orderId,
       customerName: checkoutData.customerName,
@@ -124,10 +104,9 @@ export async function POST(req: Request) {
       subtotal: (subtotal ?? 0).toString(),
       total: (total ?? 0).toString(),
       status: 'pending',
-      asaasCheckoutUrl: checkoutUrl,
     });
 
-    // Insert Items and Addons
+    // 5. Insert Items and Addons
     for (const item of items) {
       const [insertedItem] = await db.insert(orderItems).values({
         orderId,
@@ -154,6 +133,41 @@ export async function POST(req: Request) {
         await db.insert(orderItemAddons).values(addonsToInsert);
       }
     }
+
+    // 6. Create payment in Asaas AFTER order is saved
+    // Now the webhook can safely find and update the order
+    const description = `Pedido #${orderId.split('-')[0].toUpperCase()} - Rei do Picadão`;
+    const billingType = body.billingType || 'UNDEFINED';
+    let checkoutUrl: string | null = null;
+
+    try {
+      checkoutUrl = await createCheckout(
+        orderId,
+        customer.id,
+        total,
+        description,
+        billingType
+      );
+    } catch (asaasError) {
+      // If Asaas payment creation fails, cancel the order
+      console.error('Asaas payment creation failed, cancelling order:', asaasError);
+      await db.update(orders)
+        .set({ status: 'cancelled' as any })
+        .where(eq(orders.id, orderId));
+      return NextResponse.json({ error: 'Erro ao gerar link de pagamento no Asaas.' }, { status: 500 });
+    }
+
+    if (!checkoutUrl) {
+      await db.update(orders)
+        .set({ status: 'cancelled' as any })
+        .where(eq(orders.id, orderId));
+      return NextResponse.json({ error: 'Link de pagamento não recebido do Asaas.' }, { status: 500 });
+    }
+
+    // 7. Update order with checkout URL
+    await db.update(orders)
+      .set({ asaasCheckoutUrl: checkoutUrl })
+      .where(eq(orders.id, orderId));
 
     return NextResponse.json({ checkoutUrl });
 
