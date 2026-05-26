@@ -73,12 +73,17 @@ export default function PagamentoPage() {
         return;
       }
 
-      // Redirecionar para o link de checkout do Asaas
+      // Redirecionamento Inteligente (PIX Transparente)
       if (data.checkoutUrl) {
         setRedirecting(true);
         // NOTA: Não limpamos o carrinho aqui. Ele será limpo na página de confirmação.
-        // Assim, se o cliente clicar em "voltar" no navegador, o carrinho não se perde.
-        window.location.href = data.checkoutUrl;
+        if (billingType === 'PIX' && data.orderId) {
+          // Para PIX, o cliente não sai da loja. Vai direto para o acompanhamento
+          router.push(`/checkout/confirmacao?orderId=${data.orderId}`);
+        } else {
+          // Para cartão de crédito, precisa ir para o Asaas inserir os dados
+          window.location.href = data.checkoutUrl;
+        }
       } else {
         toast.error('Link de pagamento não recebido.');
         setLoading(false);

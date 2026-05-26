@@ -169,7 +169,7 @@ export async function POST(req: Request) {
       .set({ asaasCheckoutUrl: checkoutUrl })
       .where(eq(orders.id, orderId));
 
-    return NextResponse.json({ checkoutUrl });
+    return NextResponse.json({ checkoutUrl, orderId });
 
   } catch (error: any) {
     console.error('Error creating checkout:', error);

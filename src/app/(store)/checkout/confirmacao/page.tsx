@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useCartStore } from '@/stores/cart-store';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, CreditCard, ChefHat, PackageCheck, Bike, CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, CreditCard, ChefHat, PackageCheck, Bike, CheckCircle2, XCircle, Copy } from 'lucide-react';
 import Link from 'next/link';
 import { confirmOrderDelivery } from './actions';
 import { toast } from 'sonner';
@@ -31,6 +31,8 @@ function ConfirmacaoContent() {
   const [status, setStatus] = useState<OrderStatus>('pending');
   const [loading, setLoading] = useState(true);
   const [confirmingDelivery, setConfirmingDelivery] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState<{ encodedImage: string, payload: string } | null>(null);
+  const [copying, setCopying] = useState(false);
 
   useEffect(() => {
     // Ao chegar na tela de confirmação, limpa o carrinho
@@ -51,6 +53,16 @@ function ConfirmacaoContent() {
           const data = await res.json();
           if (data.status) {
             setStatus(data.status as OrderStatus);
+            
+            // Se ainda estiver aguardando pagamento, busca o QR Code PIX (se existir)
+            if (data.status === 'pending') {
+               fetch(`/api/orders/pix-qrcode?orderId=${orderId}`)
+                 .then(r => r.json())
+                 .then(d => {
+                    if (d.qrCode) setQrCodeData(d.qrCode);
+                 })
+                 .catch(err => console.error('Erro ao buscar QR Code:', err));
+            }
           }
         }
       } catch (error) {
@@ -129,6 +141,44 @@ function ConfirmacaoContent() {
           <p className="text-xl font-bold font-mono">#{shortId}</p>
         </div>
       </div>
+
+      {status === 'pending' && qrCodeData && (
+        <div className="bg-card border border-primary/20 rounded-xl p-6 mb-8 shadow-sm text-center">
+          <h2 className="font-semibold text-xl mb-2">Pague com PIX</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            Escaneie o QR Code abaixo ou copie a chave Pix para finalizar seu pedido.
+          </p>
+          
+          <div className="flex justify-center mb-6">
+            <div className="bg-white p-2 border rounded-xl shadow-sm">
+              <img 
+                src={`data:image/jpeg;base64,${qrCodeData.encodedImage}`} 
+                alt="QR Code PIX" 
+                className="w-48 h-48"
+              />
+            </div>
+          </div>
+          
+          <div className="bg-muted p-3 rounded-lg flex items-center justify-between gap-3 max-w-sm mx-auto border">
+            <p className="text-xs truncate font-mono text-muted-foreground text-left w-full">
+              {qrCodeData.payload}
+            </p>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="shrink-0"
+              onClick={() => {
+                navigator.clipboard.writeText(qrCodeData.payload);
+                setCopying(true);
+                toast.success('Chave Pix copiada!');
+                setTimeout(() => setCopying(false), 2000);
+              }}
+            >
+              {copying ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {!isCancelled && (
         <div className="bg-card border rounded-xl p-6 mb-8 shadow-sm">
