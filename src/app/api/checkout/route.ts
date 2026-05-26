@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     // 4. Create Checkout Link in Asaas first
     const description = `Pedido #${orderId.split('-')[0].toUpperCase()} - Rei do Picadão`;
     const billingType = body.billingType || 'UNDEFINED'; // Default to UNDEFINED if not sent
-    const checkoutUrl = await createCheckout(
+    let checkoutUrl = await createCheckout(
       orderId,
       customer.id,
       total,
@@ -97,6 +97,13 @@ export async function POST(req: Request) {
 
     if (!checkoutUrl) {
       return NextResponse.json({ error: 'Erro ao gerar link de pagamento no Asaas.' }, { status: 500 });
+    }
+
+    // Force autoRedirect parameter directly on the URL as per Asaas documentation
+    if (checkoutUrl && !checkoutUrl.includes('autoRedirect')) {
+      checkoutUrl = checkoutUrl.includes('?') 
+        ? `${checkoutUrl}&autoRedirect=true` 
+        : `${checkoutUrl}?autoRedirect=true`;
     }
 
     // 5. Save order to database (neon-http does not support transactions)
