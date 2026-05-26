@@ -164,6 +164,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Link de pagamento não recebido do Asaas.' }, { status: 500 });
     }
 
+    // RESTAURADO: Forçar parâmetro autoRedirect diretamente na URL.
+    // O Asaas (especialmente em navegadores Mobile e no Sandbox) precisa deste parâmetro
+    // na URL da fatura para engatilhar o script JS de redirecionamento do Chrome/Safari após o pagamento.
+    if (checkoutUrl && !checkoutUrl.includes('autoRedirect')) {
+      checkoutUrl = checkoutUrl.includes('?') 
+        ? `${checkoutUrl}&autoRedirect=true` 
+        : `${checkoutUrl}?autoRedirect=true`;
+    }
+
     // 7. Update order with checkout URL
     await db.update(orders)
       .set({ asaasCheckoutUrl: checkoutUrl })
