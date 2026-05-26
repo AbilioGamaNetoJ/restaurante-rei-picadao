@@ -152,7 +152,7 @@ export async function createCheckout(
       externalReference: orderId,
       callback: {
         successUrl: `${appUrl}/checkout/confirmacao?orderId=${orderId}`,
-        autoRedirect: true
+        autoRedirect: false // Usar "false" obriga o Asaas a exibir um botão CLARO de retorno em vez de tentar redirecionamento cego
       }
     };
 
