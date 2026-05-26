@@ -80,11 +80,11 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between">
-        <div className="relative max-w-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="relative w-full sm:max-w-xs">
           <Input
             placeholder="Buscar categorias..."
-            className="pr-10"
+            className="pr-10 w-full"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -95,7 +95,7 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
           <DialogTrigger nativeButton={true} render={
             <button 
               onClick={handleOpenNew}
-              className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
             >
               <Plus className="mr-2 h-4 w-4" /> Nova Categoria
             </button>

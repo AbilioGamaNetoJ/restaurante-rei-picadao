@@ -459,11 +459,11 @@ export function ConfiguracoesClient({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium justify-center sm:justify-start">
-                      <div className="bg-orange-50 p-1 rounded-md shrink-0">
+                    <div className="flex items-start gap-1.5 text-xs text-gray-500 font-medium justify-center sm:justify-start">
+                      <div className="bg-orange-50 p-1 rounded-md shrink-0 mt-0.5">
                         <MapPin className="h-3.5 w-3.5 text-orange-500" />
                       </div>
-                      <span className="text-gray-900 font-bold truncate">{settings.address || "Endereço não informado"}</span>
+                      <span className="text-gray-900 font-bold text-left break-words line-clamp-2 sm:line-clamp-none">{settings.address || "Endereço não informado"}</span>
                     </div>
 
                     <div className="pt-2 flex items-center justify-center sm:justify-start">
