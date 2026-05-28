@@ -56,10 +56,8 @@ export async function createAsaasCustomer(
       if (searchData.data && searchData.data.length > 0) {
         const customerId = searchData.data[0].id;
         const updateBody: any = {
-          name,
           phone: cleanPhone,
           mobilePhone: cleanPhone,
-          cpfCnpj: cleanCpfCnpj,
         };
         
         // Update customer with the latest address to prevent manual input during checkout
@@ -71,7 +69,7 @@ export async function createAsaasCustomer(
           if (addressData.addressComplement) updateBody.complement = addressData.addressComplement;
         }
         
-        await fetch(`${ASAAS_API_URL}/customers/${customerId}`, {
+        const updateRes = await fetch(`${ASAAS_API_URL}/customers/${customerId}`, {
           method: 'POST', // Asaas uses POST /customers/{id} for updates
           headers: {
             'Content-Type': 'application/json',
@@ -79,6 +77,12 @@ export async function createAsaasCustomer(
           },
           body: JSON.stringify(updateBody),
         });
+
+        if (!updateRes.ok) {
+          const errText = await updateRes.text();
+          console.error("Asaas update failed for customer", customerId, ":", errText);
+          // We don't throw here to not block the checkout, but the phone won't update
+        }
         
         return { id: customerId };
       }
