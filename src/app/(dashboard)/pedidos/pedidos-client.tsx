@@ -2,13 +2,13 @@
 
 import * as React from 'react';
 
-
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { Trash2, ChevronLeft, ChevronRight, Calendar, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { updateOrderStatus, deleteOrder } from './actions';
 
@@ -31,10 +31,25 @@ const tabs: { value: string; label: string; statuses: OrderStatus[] }[] = [
 ];
 
 
+const REFRESH_INTERVAL_MS = 15000;
+
 export function PedidosClient({ initialOrders }: { initialOrders: any[] }) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('active');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isPending, startTransition] = useTransition();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const refresh = useCallback(() => {
+    setIsRefreshing(true);
+    router.refresh();
+    setTimeout(() => setIsRefreshing(false), 800);
+  }, [router]);
+
+  useEffect(() => {
+    const interval = setInterval(refresh, REFRESH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [refresh]);
 
   const activeTabConfig = tabs.find(t => t.value === activeTab)!;
   
@@ -69,6 +84,7 @@ export function PedidosClient({ initialOrders }: { initialOrders: any[] }) {
       try {
         await updateOrderStatus(orderId, newStatus);
         toast.success(`Status atualizado para ${statusMap[newStatus].label}`);
+        refresh();
       } catch (error) {
         toast.error('Erro ao atualizar status');
       }
@@ -84,6 +100,7 @@ export function PedidosClient({ initialOrders }: { initialOrders: any[] }) {
       try {
         await deleteOrder(orderId);
         toast.success('Pedido excluído com sucesso');
+        refresh();
       } catch (error) {
         toast.error('Erro ao excluir pedido');
       }
@@ -207,7 +224,7 @@ export function PedidosClient({ initialOrders }: { initialOrders: any[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 pb-4 overflow-x-auto">
+      <div className="flex gap-2 pb-4 overflow-x-auto items-center">
         {tabs.map(tab => (
           <Button
             key={tab.value}
@@ -217,6 +234,15 @@ export function PedidosClient({ initialOrders }: { initialOrders: any[] }) {
             {tab.label}
           </Button>
         ))}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={refresh}
+          title="Atualizar pedidos"
+          className="ml-auto"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </Button>
       </div>
 
       {activeTab !== 'active' && (
