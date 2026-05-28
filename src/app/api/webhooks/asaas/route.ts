@@ -40,19 +40,37 @@ export async function POST(req: Request) {
       // Try to update the order, with retry for race condition resilience
       let updated = false;
       for (let attempt = 0; attempt < 3; attempt++) {
-        const result = await db.update(orders)
-          .set({ 
-            status: newStatus as any,
-            paymentId: payment.id,
-            paymentMethod: payment.billingType,
-            paymentStatus: payment.status
-          })
-          .where(eq(orders.id, orderId))
-          .returning({ id: orders.id });
+        const currentOrder = await db.query.orders.findFirst({
+          where: eq(orders.id, orderId)
+        });
 
-        if (result.length > 0) {
-          updated = true;
-          break;
+        if (currentOrder) {
+          // Se o pedido foi cancelado localmente, mas o Asaas confirmou o pagamento (ex: race condition do Pix)
+          if (currentOrder.status === 'cancelled' && newStatus === 'paid') {
+            console.log(`[webhook] Pagamento recebido para pedido já cancelado: ${orderId}. Iniciando estorno automático...`);
+            try {
+              const { refundPayment } = await import('@/lib/asaas');
+              await refundPayment(payment.id);
+            } catch (err) {
+              console.error(`[webhook] Erro ao estornar pagamento atrasado do pedido ${orderId}:`, err);
+            }
+            newStatus = 'cancelled'; // Mantém o status como cancelado
+          }
+
+          const result = await db.update(orders)
+            .set({ 
+              status: newStatus as any,
+              paymentId: payment.id,
+              paymentMethod: payment.billingType,
+              paymentStatus: payment.status
+            })
+            .where(eq(orders.id, orderId))
+            .returning({ id: orders.id });
+
+          if (result.length > 0) {
+            updated = true;
+            break;
+          }
         }
 
         // Order not found yet — might still be inserting (race condition)

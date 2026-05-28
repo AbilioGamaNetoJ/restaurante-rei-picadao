@@ -138,10 +138,10 @@ export async function POST(req: Request) {
     // Now the webhook can safely find and update the order
     const description = `Pedido #${orderId.split('-')[0].toUpperCase()} - Rei do Picadão`;
     const billingType = body.billingType || 'UNDEFINED';
-    let checkoutUrl: string | null = null;
+    let checkoutResult: { invoiceUrl: string, paymentId: string } | null = null;
 
     try {
-      checkoutUrl = await createCheckout(
+      checkoutResult = await createCheckout(
         orderId,
         customer.id,
         total,
@@ -157,19 +157,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Erro ao gerar link de pagamento no Asaas.' }, { status: 500 });
     }
 
-    if (!checkoutUrl) {
+    if (!checkoutResult) {
       await db.update(orders)
         .set({ status: 'cancelled' as any })
         .where(eq(orders.id, orderId));
       return NextResponse.json({ error: 'Link de pagamento não recebido do Asaas.' }, { status: 500 });
     }
 
-    // 7. Update order with checkout URL
+    // 7. Update order with checkout URL and paymentId
     await db.update(orders)
-      .set({ asaasCheckoutUrl: checkoutUrl })
+      .set({ 
+        asaasCheckoutUrl: checkoutResult.invoiceUrl,
+        paymentId: checkoutResult.paymentId
+      })
       .where(eq(orders.id, orderId));
 
-    return NextResponse.json({ checkoutUrl, orderId });
+    return NextResponse.json({ checkoutUrl: checkoutResult.invoiceUrl, orderId });
 
   } catch (error: any) {
     console.error('Error creating checkout:', error);

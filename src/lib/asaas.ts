@@ -133,7 +133,7 @@ export async function createCheckout(
   value: number, 
   description: string,
   billingType: 'PIX' | 'CREDIT_CARD' | 'UNDEFINED' = 'UNDEFINED'
-): Promise<string | null> {
+): Promise<{ invoiceUrl: string, paymentId: string } | null> {
   const apiKey = process.env.ASAAS_API_KEY;
   if (!apiKey) throw new Error("ASAAS_API_KEY not configured.");
   
@@ -178,7 +178,7 @@ export async function createCheckout(
       throw new Error(`Asaas Payment Error: ${JSON.stringify(data)}`);
     }
 
-    return data.invoiceUrl;
+    return { invoiceUrl: data.invoiceUrl, paymentId: data.id };
   } catch (error: any) {
     console.error('Error in createCheckout:', error);
     throw error;
