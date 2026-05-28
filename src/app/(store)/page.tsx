@@ -24,9 +24,9 @@ export default async function StorePage() {
     orderBy: [asc(categories.sortOrder)],
   });
 
-  // Filtra a categoria "Bebidas" e derivados para não exibir na página do cliente
+  // Filtra categorias que não devem aparecer na navegação do cliente
   const allCategories = fetchedCategories.filter(
-    (c) => !c.name.toLowerCase().includes('bebida')
+    (c) => !c.name.toLowerCase().includes('bebida') && !c.name.toLowerCase().includes('molho extra')
   );
 
   const allProducts = await db.query.products.findMany({
