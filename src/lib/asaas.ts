@@ -40,6 +40,9 @@ export async function createAsaasCustomer(
   const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
   const cleanPhone = phone.replace(/\D/g, '');
 
+  // O código do país (55) foi removido pois o Asaas interpreta como DDD.
+
+
   try {
     // First, check if customer exists
     const searchRes = await fetch(`${ASAAS_API_URL}/customers?email=${encodeURIComponent(email)}`, {
