@@ -138,7 +138,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
 
   return (
     <div className="flex flex-col gap-8 pb-24">
-      {mounted && <ClosedStoreDialog isOpenStatus={openStatus} />}
+      {mounted && <ClosedStoreDialog isOpenStatus={openStatus} hours={hours} />}
       
       {/* Hero Banner Section (Truly Full Width) */}
       <div className="relative w-full h-[280px] md:h-[450px] -mt-8 overflow-hidden group">

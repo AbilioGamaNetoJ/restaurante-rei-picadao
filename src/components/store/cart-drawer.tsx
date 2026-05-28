@@ -14,6 +14,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ShoppingCart, Minus, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 
 export function CartDrawer({ trigger }: { trigger?: React.ReactElement }) {
@@ -169,7 +170,7 @@ export function CartDrawer({ trigger }: { trigger?: React.ReactElement }) {
               className="w-full"
               size="lg"
               nativeButton={false}
-              onClick={() => setDrawerOpen(false)}
+              onClick={() => { setDrawerOpen(false); toast.dismiss(); }}
             >
               Avançar para o Checkout
             </Button>

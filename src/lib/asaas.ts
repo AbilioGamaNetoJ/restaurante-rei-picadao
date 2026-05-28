@@ -55,26 +55,30 @@ export async function createAsaasCustomer(
       const searchData = await searchRes.json();
       if (searchData.data && searchData.data.length > 0) {
         const customerId = searchData.data[0].id;
+        const updateBody: any = {
+          name,
+          phone: cleanPhone,
+          mobilePhone: cleanPhone,
+          cpfCnpj: cleanCpfCnpj,
+        };
         
         // Update customer with the latest address to prevent manual input during checkout
         if (addressData) {
-          const updateBody: any = {
-            postalCode: addressData.addressZip.replace(/\D/g, ''),
-            address: addressData.addressStreet,
-            addressNumber: addressData.addressNumber,
-            province: addressData.addressNeighborhood,
-          };
+          updateBody.postalCode = addressData.addressZip.replace(/\D/g, '');
+          updateBody.address = addressData.addressStreet;
+          updateBody.addressNumber = addressData.addressNumber;
+          updateBody.province = addressData.addressNeighborhood;
           if (addressData.addressComplement) updateBody.complement = addressData.addressComplement;
-          
-          await fetch(`${ASAAS_API_URL}/customers/${customerId}`, {
-            method: 'POST', // Asaas uses POST /customers/{id} for updates
-            headers: {
-              'Content-Type': 'application/json',
-              'access_token': apiKey,
-            },
-            body: JSON.stringify(updateBody),
-          });
         }
+        
+        await fetch(`${ASAAS_API_URL}/customers/${customerId}`, {
+          method: 'POST', // Asaas uses POST /customers/{id} for updates
+          headers: {
+            'Content-Type': 'application/json',
+            'access_token': apiKey,
+          },
+          body: JSON.stringify(updateBody),
+        });
         
         return { id: customerId };
       }

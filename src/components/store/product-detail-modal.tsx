@@ -166,7 +166,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
           )}
         </>
       );
-    });
+    }, { duration: 2000 });
     onClose();
     // Reset state
     setQuantity(1);
