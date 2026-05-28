@@ -221,3 +221,63 @@ export async function getPaymentByExternalReference(orderId: string): Promise<As
   }
 }
 
+/**
+ * Refund a payment in Asaas.
+ * @param paymentId The Asaas payment ID (e.g. pay_xxxxx)
+ */
+export async function refundPayment(paymentId: string): Promise<boolean> {
+  const apiKey = process.env.ASAAS_API_KEY;
+  if (!apiKey) throw new Error("ASAAS_API_KEY not configured.");
+
+  try {
+    const res = await fetch(`${ASAAS_API_URL}/payments/${paymentId}/refund`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'access_token': apiKey,
+      }
+    });
+
+    if (!res.ok) {
+      const errorData = await res.text();
+      console.error('Error refunding Asaas payment:', errorData);
+      throw new Error(`Asaas Refund Error: ${errorData}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in refundPayment:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a pending payment in Asaas.
+ * @param paymentId The Asaas payment ID (e.g. pay_xxxxx)
+ */
+export async function deletePayment(paymentId: string): Promise<boolean> {
+  const apiKey = process.env.ASAAS_API_KEY;
+  if (!apiKey) throw new Error("ASAAS_API_KEY not configured.");
+
+  try {
+    const res = await fetch(`${ASAAS_API_URL}/payments/${paymentId}`, {
+      method: 'DELETE',
+      headers: {
+        'access_token': apiKey,
+      }
+    });
+
+    if (!res.ok) {
+      const errorData = await res.text();
+      console.error('Error deleting Asaas payment:', errorData);
+      throw new Error(`Asaas Delete Error: ${errorData}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in deletePayment:', error);
+    throw error;
+  }
+}
+
+

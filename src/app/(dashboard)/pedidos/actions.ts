@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { orders } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { refundPayment, deletePayment } from '@/lib/asaas';
 
 export async function updateOrderStatus(orderId: string, newStatus: string) {
   const { userId } = await auth();
@@ -18,6 +19,27 @@ export async function updateOrderStatus(orderId: string, newStatus: string) {
   
   if (!validStatuses.includes(newStatus as any)) {
     throw new Error('Status inválido');
+  }
+
+  if (newStatus === 'cancelled') {
+    const currentOrder = await db.query.orders.findFirst({
+      where: eq(orders.id, orderId)
+    });
+
+    if (currentOrder && currentOrder.paymentId) {
+      try {
+        if (currentOrder.status === 'pending') {
+          // Deletar cobrança pendente no Asaas
+          await deletePayment(currentOrder.paymentId);
+        } else if (['paid', 'preparing', 'ready', 'delivering'].includes(currentOrder.status)) {
+          // Estornar pagamento já realizado no Asaas
+          await refundPayment(currentOrder.paymentId);
+        }
+      } catch (err) {
+        console.error("Falha ao comunicar com Asaas no cancelamento:", err);
+        throw new Error('Falha ao processar cancelamento/estorno no Asaas. O pedido não foi cancelado localmente para evitar inconsistências.');
+      }
+    }
   }
 
   await db
