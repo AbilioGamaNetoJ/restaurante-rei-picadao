@@ -252,6 +252,12 @@ export default function EnderecoPage() {
                 onBlur={() => validateField('customerPhone', formData.customerPhone)}
                 onChange={(e) => {
                   let v = e.target.value.replace(/\D/g, '');
+                  
+                  // Se começar com 55 (código do Brasil) e tiver mais de 11 dígitos, removemos o 55
+                  if (v.startsWith('55') && v.length >= 12) {
+                    v = v.substring(2);
+                  }
+                  
                   if (v.length > 11) v = v.slice(0, 11);
                   
                   if (v.length <= 10) {
