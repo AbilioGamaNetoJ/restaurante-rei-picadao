@@ -38,12 +38,7 @@ export async function createAsaasCustomer(
 
   // Strip formatting from cpfCnpj and phone (remove dots, dashes, slashes, spaces, parens)
   const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
-  let cleanPhone = phone.replace(/\D/g, '');
-
-  // Add Brazil country code (55) if it's a standard 10 or 11 digit number
-  if (cleanPhone.length === 10 || cleanPhone.length === 11) {
-    cleanPhone = `55${cleanPhone}`;
-  }
+  const cleanPhone = phone.replace(/\D/g, '');
 
   try {
     // First, check if customer exists
