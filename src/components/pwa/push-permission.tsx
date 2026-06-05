@@ -24,6 +24,9 @@ export function PushPermission() {
       if (!asked) {
         setTimeout(() => setIsVisible(true), 5000);
       }
+    } else if (Notification.permission === 'granted') {
+      // Sync subscription with the server
+      subscribeToPush();
     }
   }, []);
 
@@ -144,10 +147,26 @@ async function subscribeToPush() {
       return;
     }
 
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidKey),
-    });
+    let subscription;
+    try {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      });
+    } catch (err: any) {
+      if (err.name === 'InvalidStateError' || String(err).includes('applicationServerKey')) {
+        console.warn('[push] Invalid applicationServerKey, unsubscribing old subscription...');
+        const oldSub = await registration.pushManager.getSubscription();
+        if (oldSub) await oldSub.unsubscribe();
+
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        });
+      } else {
+        throw err;
+      }
+    }
 
     const json = subscription.toJSON();
 
