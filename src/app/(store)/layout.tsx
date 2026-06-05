@@ -4,11 +4,18 @@ import { db } from "@/db";
 import { storeSettings } from "@/db/schema";
 import { StoreIcon } from "@/components/store/store-icons";
 import { CartDrawer } from "@/components/store/cart-drawer";
+import { auth } from "@clerk/nextjs/server";
+import { can } from "@/lib/permissions";
+import { LayoutDashboard } from "lucide-react";
 
 export default async function StoreLayout({ children }: { children: ReactNode }) {
   const settings = await db.query.storeSettings.findFirst();
   const storeName = settings?.name || "Rei do Picadão";
   const logoUrl = settings?.logoUrl;
+  
+  const { sessionClaims } = await auth();
+  const userRole = sessionClaims?.metadata?.role as string | undefined;
+  const showDashboardLink = can(userRole, 'access_dashboard');
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50/50">
@@ -31,6 +38,15 @@ export default async function StoreLayout({ children }: { children: ReactNode })
             </span>
           </Link>
           <div className="flex items-center gap-4">
+            {showDashboardLink && (
+              <Link 
+                href="/dashboard" 
+                className="relative inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+                title="Acessar Dashboard"
+              >
+                <LayoutDashboard className="h-5 w-5" />
+              </Link>
+            )}
             <CartDrawer />
           </div>
         </div>
