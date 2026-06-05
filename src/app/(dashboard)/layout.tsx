@@ -5,6 +5,7 @@ import { can } from '@/lib/permissions';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { DashboardLayoutClient } from './dashboard-layout-client';
+import { PushPermission } from '@/components/pwa/push-permission';
 
 export default async function DashboardLayout({
   children,
@@ -52,6 +53,7 @@ export default async function DashboardLayout({
       storeName={storeName}
     >
       {children}
+      <PushPermission />
     </DashboardLayoutClient>
   );
 }

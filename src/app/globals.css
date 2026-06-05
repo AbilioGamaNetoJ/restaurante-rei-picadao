@@ -128,3 +128,25 @@
     @apply font-sans;
   }
 }
+
+/* PWA: Safe area support for devices with notch/dynamic island */
+@supports (padding: env(safe-area-inset-top)) {
+  .pwa-safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pwa-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* PWA: Standalone mode adjustments */
+@media (display-mode: standalone) {
+  html {
+    scrollbar-gutter: auto;
+  }
+
+  /* Apply safe area to sticky headers in standalone mode */
+  header.sticky {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}

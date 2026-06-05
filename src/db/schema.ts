@@ -290,3 +290,13 @@ export const usersRelations = relations(users, ({ many }) => ({
   expenses: many(expenses),
 }));
 
+// Push Subscriptions (Web Push Notifications for PWA)
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  endpoint: text('endpoint').notNull().unique(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+

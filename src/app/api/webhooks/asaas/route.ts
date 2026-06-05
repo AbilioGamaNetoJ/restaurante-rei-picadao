@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { orders } from '@/db/schema';
+import { orders, pushSubscriptions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 import { revalidatePath } from 'next/cache';
@@ -69,6 +69,12 @@ export async function POST(req: Request) {
 
           if (result.length > 0) {
             updated = true;
+
+            // Send push notification for paid orders
+            if (newStatus === 'paid') {
+              await sendOrderPushNotifications(currentOrder.customerName, orderId);
+            }
+
             break;
           }
         }
@@ -98,3 +104,46 @@ export async function POST(req: Request) {
   }
 }
 
+async function sendOrderPushNotifications(customerName: string, orderId: string) {
+  try {
+    // Only send if VAPID keys are configured
+    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+      return;
+    }
+
+    const { sendPushNotification } = await import('@/lib/web-push');
+
+    // Get all push subscriptions
+    const subscriptions = await db.select().from(pushSubscriptions);
+
+    if (subscriptions.length === 0) return;
+
+    const shortId = orderId.slice(0, 8).toUpperCase();
+    const payload = {
+      title: '🔥 Novo Pedido!',
+      body: `Pedido #${shortId} de ${customerName} foi pago`,
+      url: '/pedidos',
+      tag: `order-${orderId}`,
+    };
+
+    // Send to all subscriptions, clean up expired ones
+    const results = await Promise.allSettled(
+      subscriptions.map(async (sub) => {
+        try {
+          await sendPushNotification(sub, payload);
+        } catch (error: any) {
+          if (error.message === 'SUBSCRIPTION_EXPIRED') {
+            await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id));
+            console.log(`[push] Cleaned up expired subscription: ${sub.endpoint.slice(0, 50)}...`);
+          }
+        }
+      })
+    );
+
+    const sent = results.filter(r => r.status === 'fulfilled').length;
+    console.log(`[push] Sent ${sent}/${subscriptions.length} push notifications for order ${shortId}`);
+  } catch (error) {
+    // Push notification failure should not break the webhook
+    console.error('[push] Failed to send order notifications:', error);
+  }
+}
