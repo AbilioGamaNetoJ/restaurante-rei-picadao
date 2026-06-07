@@ -33,7 +33,7 @@ export default async function StoreLayout({ children }: { children: ReactNode })
                 <StoreIcon className="h-5 w-5" />
               </div>
             )}
-            <span className="font-black text-xl text-gray-900 tracking-tighter group-hover:text-red-600 transition-colors">
+            <span className="font-semibold text-xl text-gray-900 group-hover:text-red-600 transition-colors">
               {storeName}
             </span>
           </Link>

@@ -118,6 +118,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
   };
 
   const isStoreOpen = () => {
+    if (!hours || hours.length === 0) return false;
     const now = new Date();
     const currentDay = now.getDay();
     const currentTime = now.getHours() * 60 + now.getMinutes();
@@ -134,7 +135,11 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
     });
   };
 
-  const openStatus = isStoreOpen();
+  const [openStatus, setOpenStatus] = useState(false);
+
+  useEffect(() => {
+    setOpenStatus(isStoreOpen());
+  }, [hours]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex flex-col gap-8 pb-24">
@@ -163,25 +168,18 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
             <img src={settings.logoUrl} alt={settings.name} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white">
-              <span className="text-5xl font-black tracking-tighter">{settings?.name?.[0] || "R"}</span>
+              <span className="text-5xl font-semibold tracking-tighter">{settings?.name?.[0] || "R"}</span>
             </div>
           )}
         </div>
 
         {/* Store Details */}
         <div className="flex-1 text-center md:text-left space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
-            <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter">
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-gray-900 leading-tight">
               {settings?.name || "Rei do Picadão"}
             </h1>
-            <div className={cn(
-              "self-center md:self-auto px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-colors",
-              openStatus 
-                ? "bg-green-50 text-green-600 border-green-200" 
-                : "bg-red-50 text-red-600 border-red-200"
-            )}>
-              {openStatus ? "• Aberto agora" : "• Fechado"}
-            </div>
+            <StoreStatusBadge hours={hours} isStoreOpen={isStoreOpen} />
           </div>
 
           <div className="flex flex-wrap justify-center md:justify-start items-center gap-x-8 gap-y-3 text-sm text-gray-500 font-medium">
@@ -215,8 +213,8 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
 
           <div className="pt-4 flex items-center justify-center md:justify-start">
             <div className="bg-gray-100/50 px-5 py-2.5 rounded-2xl flex items-center gap-3 border border-gray-200/50">
-              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Pedido Mínimo</span>
-              <span className="text-lg font-black text-gray-900">R$ {parseFloat(settings?.minOrder || "0").toFixed(2)}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Pedido Mínimo</span>
+              <span className="text-lg font-semibold text-gray-900">R$ {parseFloat(settings?.minOrder || "0").toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -278,7 +276,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
             <div className="flex flex-col gap-1 mb-8">
               <div className="flex items-center gap-4">
                 <div className="h-10 w-2 bg-red-600 rounded-full" />
-                <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tighter">
+                <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 tracking-tighter">
                   Resultados para &quot;{searchQuery}&quot;
                 </h2>
               </div>
@@ -288,7 +286,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
             </div>
 
             {searchResults.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-8">
                 {searchResults.map((product) => (
                   <ProductCard
                     key={`search-${product.id}`}
@@ -309,7 +307,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
             ) : (
               <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
                 <div className="text-6xl">🍽️</div>
-                <p className="text-2xl font-black text-gray-900">Nenhum prato encontrado</p>
+                <p className="text-2xl font-semibold text-gray-900">Nenhum prato encontrado</p>
                 <p className="text-gray-400 font-medium">
                   Tente buscar por outro nome ou categoria
                 </p>
@@ -333,7 +331,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
             <div className="flex flex-col gap-1 mb-8">
               <div className="flex items-center gap-4">
                 <div className="h-10 w-2 bg-yellow-500 rounded-full shadow-[0_0_15px_rgba(234,179,8,0.4)]" />
-                <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tighter flex items-center gap-3">
+                <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 tracking-tighter flex items-center gap-3">
                   Principais Escolhas
                   <Star className="h-8 w-8 text-yellow-500 fill-yellow-500 animate-pulse" />
                 </h2>
@@ -343,7 +341,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
               </p>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-8">
               {featuredProducts.map((product) => (
                 <ProductCard 
                   key={`featured-${product.id}`}
@@ -381,7 +379,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
               <div className="flex flex-col gap-1 mb-8">
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-2 bg-red-600 rounded-full" />
-                  <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tighter">
+                  <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 tracking-tighter">
                     {category.name}
                   </h2>
                 </div>
@@ -390,7 +388,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-8">
                 {categoryProducts.map((product) => (
                   <ProductCard 
                     key={`${category.id}-${product.id}`}
@@ -447,62 +445,90 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
   );
 }
 
+function StoreStatusBadge({ hours, isStoreOpen }: { hours: any[], isStoreOpen: () => boolean }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isOpen = mounted ? isStoreOpen() : false;
+
+  return (
+    <div
+      suppressHydrationWarning
+      className={cn(
+        "self-center md:self-auto px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-widest border transition-colors",
+        !mounted
+          ? "bg-gray-50 text-gray-400 border-gray-200"
+          : isOpen
+            ? "bg-green-50 text-green-600 border-green-200"
+            : "bg-red-50 text-red-600 border-red-200"
+      )}
+    >
+      {!mounted ? "• Verificando..." : isOpen ? "• Aberto agora" : "• Fechado"}
+    </div>
+  );
+}
+
 function ProductCard({ product, onClick }: { product: any, onClick: () => void }) {
   return (
     <div 
-      className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:border-red-100 transition-all duration-500 cursor-pointer flex flex-col group h-full ring-1 ring-black/[0.02]"
+      className="bg-white rounded-[1.5rem] md:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:border-red-100 transition-all duration-500 cursor-pointer flex flex-row md:flex-col group h-full ring-1 ring-black/[0.02]"
       onClick={onClick}
     >
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-50">
-        {product.imageUrl ? (
-          <img 
-            src={product.imageUrl} 
-            alt={product.name} 
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-200">
-            <StoreIcon className="h-16 w-16 opacity-10" />
-          </div>
-        )}
-        
-        {/* Discount Badge */}
-        {product.originalPrice && (
-          <div className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg shadow-red-600/20 tracking-widest uppercase">
-            Promoção
-          </div>
-        )}
+      <div className="p-3 md:p-4 shrink-0">
+        <div className="relative w-[110px] h-[110px] md:w-full md:h-auto md:aspect-[4/3] overflow-hidden bg-gray-50 rounded-xl md:rounded-2xl">
+          {product.imageUrl ? (
+            <img 
+              src={product.imageUrl} 
+              alt={product.name} 
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            />
+          ) : (
+            <div className="absolute inset-0 w-full h-full flex items-center justify-center text-gray-200">
+              <StoreIcon className="h-10 w-10 md:h-16 md:w-16 opacity-10" />
+            </div>
+          )}
+          
+          {/* Discount Badge */}
+          {product.originalPrice && (
+            <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-red-600 text-white text-[9px] md:text-[10px] font-semibold px-2 md:px-3 py-1 md:py-1.5 rounded-full shadow-lg shadow-red-600/20 tracking-widest uppercase z-10">
+              Promoção
+            </div>
+          )}
 
-        {/* Quick Add Overlay */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500 flex items-center justify-center">
-          <div className="bg-white text-gray-900 px-6 py-2.5 rounded-full font-black text-xs opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500 shadow-xl">
-            ADICIONAR
+          {/* Quick Add Overlay */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500 flex items-center justify-center z-20">
+            <div className="bg-white text-gray-900 px-6 py-2.5 rounded-full font-semibold text-xs opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500 shadow-xl">
+              ADICIONAR
+            </div>
           </div>
         </div>
       </div>
       
-      <div className="p-6 flex flex-col flex-1">
-        <h3 className="font-black text-xl text-gray-900 line-clamp-1 group-hover:text-red-600 transition-colors tracking-tight">
+      <div className="py-3 pr-3 pl-1 md:px-5 md:pb-5 md:pt-1 flex flex-col flex-1">
+        <h3 className="font-semibold text-base md:text-lg text-gray-900 line-clamp-2 md:line-clamp-1 group-hover:text-red-600 transition-colors tracking-tight leading-tight">
           {product.name}
         </h3>
-        <p className="text-gray-400 text-sm line-clamp-2 mt-2 leading-relaxed font-medium">
+        <p className="text-gray-400 text-xs md:text-sm line-clamp-2 mt-1 md:mt-2 leading-relaxed font-medium">
           {product.description}
         </p>
         
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-2 md:mt-4 flex flex-wrap gap-2">
           {product.servesPeople && (
-            <div className="flex items-center gap-1.5 text-[10px] font-black text-gray-500 bg-gray-100/80 px-3 py-1.5 rounded-full uppercase tracking-tighter">
+            <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-semibold text-gray-500 bg-gray-100/80 px-2 md:px-3 py-1 md:py-1.5 rounded-full uppercase tracking-tighter">
               👤 Serve {product.servesPeople} {product.servesPeople > 1 ? 'pessoas' : 'pessoa'}
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-3 mt-auto pt-6">
-          <div className="font-black text-gray-900 text-2xl tracking-tighter">
+        <div className="flex items-center gap-1.5 md:gap-3 mt-auto pt-3 md:pt-4">
+          <div className="font-semibold text-gray-900 text-base md:text-xl">
             R$ {parseFloat(product.price).toFixed(2)}
           </div>
           {product.originalPrice && (
-            <div className="text-sm text-gray-300 line-through font-bold">
+            <div className="text-xs text-gray-300 line-through font-medium">
               R$ {parseFloat(product.originalPrice).toFixed(2)}
             </div>
           )}
@@ -525,7 +551,7 @@ function CartBadge() {
   if (!mounted || totalItems === 0) return null;
   
   return (
-    <span className="absolute -top-1 -right-1 bg-white text-gray-900 text-[10px] font-black rounded-full h-5 w-5 flex items-center justify-center shadow-lg animate-in zoom-in duration-300">
+    <span className="absolute -top-1 -right-1 bg-white text-gray-900 text-[10px] font-semibold rounded-full h-5 w-5 flex items-center justify-center shadow-lg animate-in zoom-in duration-300">
       {totalItems}
     </span>
   );
@@ -545,8 +571,8 @@ function CartTotal() {
 
   return (
     <div className="flex flex-col items-end leading-none">
-      <span className="text-[10px] uppercase font-black opacity-60 tracking-widest mb-1">Total</span>
-      <span className="text-xl font-black tracking-tighter">
+      <span className="text-[10px] uppercase font-semibold opacity-60 tracking-widest mb-1">Total</span>
+      <span className="text-xl font-semibold tracking-tighter">
         R$ {total.toFixed(2)}
       </span>
     </div>

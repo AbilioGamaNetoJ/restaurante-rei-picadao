@@ -1,20 +1,24 @@
 import React from "react";
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins, Montserrat } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/sonner";
 import { RegisterSW } from "@/components/pwa/register-sw";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -55,9 +59,9 @@ export default function RootLayout({
     <ClerkProvider localization={ptBR}>
       <html
         lang="pt-BR"
-        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+        className={`${poppins.variable} ${montserrat.variable} h-full antialiased`}
       >
-        <body className="min-h-full flex flex-col">
+        <body suppressHydrationWarning className="min-h-full flex flex-col">
           {children}
           <Toaster position="top-center" />
           <RegisterSW />
