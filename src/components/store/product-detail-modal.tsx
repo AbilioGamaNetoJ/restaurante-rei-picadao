@@ -146,7 +146,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
     });
 
     useCartStore.getState().setDrawerOpen(true);
-    toast.custom((t) => {
+    toast.custom(() => {
       if (typeof document === 'undefined') return <></>;
       return (
         <>

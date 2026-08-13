@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { db } from '@/db';
-import { orders, orderItems, orderItemAddons } from '@/db/schema';
+import { orders } from '@/db/schema';
 import { desc } from 'drizzle-orm';
 import { PedidosClient } from './pedidos-client';
 

@@ -13,8 +13,30 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import Image from 'next/image';
 import { UploadButton } from '@/lib/uploadthing';
 
+type Category = {
+  id: string;
+  name: string;
+  slug: string;
+  type: 'produto' | 'adicional';
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type Addon = {
+  id: string;
+  name: string;
+  description: string | null;
+  price: string;
+  categoryId: string | null;
+  imageUrl: string | null;
+  isAvailable: boolean;
+  category: Category | null;
+};
+
 // Helper functions for price formatting
-const toDisplayPrice = (val: any) => {
+const toDisplayPrice = (val: string | null | undefined) => {
   if (val === null || val === undefined) return '';
   const str = String(val);
   return str.replace(/\./g, ',');
@@ -50,7 +72,7 @@ const sanitizeAndFormatPrice = (value: string) => {
   return clean;
 };
 
-export function AdicionaisClient({ addons, categories }: { addons: any[], categories: any[] }) {
+export function AdicionaisClient({ addons, categories }: { addons: Addon[], categories: Category[] }) {
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -87,7 +109,7 @@ export function AdicionaisClient({ addons, categories }: { addons: any[], catego
     setIsOpen(true);
   };
 
-  const handleOpenEdit = (addon: any) => {
+  const handleOpenEdit = (addon: Addon) => {
     setEditingId(addon.id);
     setFormData({
       name: addon.name,
@@ -113,7 +135,7 @@ export function AdicionaisClient({ addons, categories }: { addons: any[], catego
         toast.success('Categoria criada');
         setNewCategoryName('');
         setIsAddingCategory(false);
-      } catch (error) {
+      } catch {
         toast.error('Erro ao criar categoria');
       }
     });
@@ -129,7 +151,7 @@ export function AdicionaisClient({ addons, categories }: { addons: any[], catego
         if (formData.categoryId === id) {
           setFormData({ ...formData, categoryId: '' });
         }
-      } catch (error) {
+      } catch {
         toast.error('Erro ao excluir categoria');
       }
     });
@@ -157,7 +179,7 @@ export function AdicionaisClient({ addons, categories }: { addons: any[], catego
           toast.success('Adicional criado');
         }
         setIsOpen(false);
-      } catch (error) {
+      } catch {
         toast.error('Erro ao salvar adicional');
       }
     });
@@ -169,7 +191,7 @@ export function AdicionaisClient({ addons, categories }: { addons: any[], catego
       try {
         await deleteAddon(id);
         toast.success('Adicional excluído');
-      } catch (error) {
+      } catch {
         toast.error('Erro ao excluir adicional');
       }
     });

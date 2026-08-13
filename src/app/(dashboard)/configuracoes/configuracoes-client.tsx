@@ -10,18 +10,35 @@ import { updateStoreSettings, updateStoreHours } from './actions';
 import { Trash2, Plus, Star, Clock, Bike, MapPin } from 'lucide-react';
 import { UploadButton } from '@/lib/uploadthing';
 import { cn } from '@/lib/utils';
-import { StoreIcon } from '@/components/store/store-icons';
 
 const DAYS_OF_WEEK = [
   'Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'
 ];
 
-export function ConfiguracoesClient({ 
-  initialSettings, 
-  initialHours 
-}: { 
-  initialSettings: any; 
-  initialHours: any[];
+type StoreSettings = {
+  id: string;
+  name: string;
+  address: string;
+  phone: string | null;
+  deliveryRadiusKm: string;
+  minOrder: string;
+  deliveryFeeKm: string;
+  logoUrl: string | null;
+  bannerUrl: string | null;
+};
+
+type StoreHour = {
+  dayOfWeek: number;
+  openTime: string;
+  closeTime: string;
+};
+
+export function ConfiguracoesClient({
+  initialSettings,
+  initialHours
+}: {
+  initialSettings: StoreSettings | null;
+  initialHours: StoreHour[];
 }) {
   const [isPending, startTransition] = useTransition();
 
@@ -36,7 +53,7 @@ export function ConfiguracoesClient({
     bannerUrl: initialSettings?.bannerUrl || '',
   });
 
-  const [hours, setHours] = useState<any[]>(initialHours || []);
+  const [hours, setHours] = useState<StoreHour[]>(initialHours || []);
 
   const handleSettingsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +61,7 @@ export function ConfiguracoesClient({
       try {
         await updateStoreSettings(initialSettings?.id || null, settings);
         toast.success('Configurações da loja salvas com sucesso');
-      } catch (error) {
+      } catch {
         toast.error('Erro ao salvar configurações');
       }
     });
@@ -60,7 +77,7 @@ export function ConfiguracoesClient({
       try {
         await updateStoreHours(initialSettings.id, hours);
         toast.success('Horários de funcionamento salvos com sucesso');
-      } catch (error) {
+      } catch {
         toast.error('Erro ao salvar horários');
       }
     });
@@ -74,7 +91,7 @@ export function ConfiguracoesClient({
     setHours(hours.filter((_, i) => i !== index));
   };
 
-  const updateHour = (index: number, field: string, value: any) => {
+  const updateHour = (index: number, field: keyof StoreHour, value: string | number) => {
     const newHours = [...hours];
     newHours[index] = { ...newHours[index], [field]: value };
     setHours(newHours);

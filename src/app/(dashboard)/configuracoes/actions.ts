@@ -7,7 +7,18 @@ import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { can, getRoleFromClaims } from '@/lib/permissions';
 
-export async function updateStoreSettings(id: string | null, data: any) {
+type StoreSettingsData = {
+  name: string;
+  address: string;
+  phone: string;
+  deliveryRadiusKm: string;
+  minOrder: string;
+  deliveryFeeKm: string;
+  logoUrl: string;
+  bannerUrl: string;
+};
+
+export async function updateStoreSettings(id: string | null, data: StoreSettingsData) {
   const { userId, sessionClaims } = await auth();
   const role = getRoleFromClaims(sessionClaims);
 
@@ -44,7 +55,13 @@ export async function updateStoreSettings(id: string | null, data: any) {
   revalidatePath('/configuracoes');
 }
 
-export async function updateStoreHours(storeId: string, hours: any[]) {
+type StoreHourInput = {
+  dayOfWeek: number;
+  openTime: string;
+  closeTime: string;
+};
+
+export async function updateStoreHours(storeId: string, hours: StoreHourInput[]) {
   const { userId, sessionClaims } = await auth();
   const role = getRoleFromClaims(sessionClaims);
 

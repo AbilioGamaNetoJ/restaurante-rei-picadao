@@ -22,7 +22,7 @@ export async function PUT(
     const body = await req.json();
     const { name, type, sortOrder, isActive } = body;
 
-    const updateData: any = {
+    const updateData: Partial<typeof categories.$inferInsert> = {
       updatedAt: new Date(),
     };
 
@@ -44,10 +44,10 @@ export async function PUT(
     }
 
     return NextResponse.json(updatedCategory[0]);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error updating category:', error);
-    
-    if (error.code === '23505') {
+
+    if (error instanceof Error && 'code' in error && error.code === '23505') {
       return NextResponse.json(
         { error: 'Já existe uma categoria com este nome.' },
         { status: 400 }

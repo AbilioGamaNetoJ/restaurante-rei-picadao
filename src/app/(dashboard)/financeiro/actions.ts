@@ -48,7 +48,7 @@ export async function updateExpense(id: string, data: { description?: string; am
     throw new Error('Não autorizado');
   }
 
-  const updateData: any = {};
+  const updateData: Partial<typeof expenses.$inferInsert> = {};
   if (data.description !== undefined) updateData.description = data.description;
   if (data.amount !== undefined) updateData.amount = data.amount;
   if (data.category !== undefined) updateData.category = data.category;

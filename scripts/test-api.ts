@@ -15,8 +15,8 @@ async function testEndpoints() {
     } else {
       console.error('❌ GET /produtos: Falhou', res.status);
     }
-  } catch (error: any) {
-    console.error('❌ GET /produtos: Erro na requisição', error.message);
+  } catch (error) {
+    console.error('❌ GET /produtos: Erro na requisição', error instanceof Error ? error.message : String(error));
   }
 
   // 2. Teste GET Categorias (Público)
@@ -27,8 +27,8 @@ async function testEndpoints() {
     } else {
       console.error('❌ GET /categorias: Falhou', res.status);
     }
-  } catch (error: any) {
-    console.error('❌ GET /categorias: Erro na requisição', error.message);
+  } catch (error) {
+    console.error('❌ GET /categorias: Erro na requisição', error instanceof Error ? error.message : String(error));
   }
 
   // 3. Teste POST Produto (Sem Auth - Esperado 401 ou 403)
@@ -43,8 +43,8 @@ async function testEndpoints() {
     } else {
       console.error('❌ POST /produtos: Erro inesperado', res.status);
     }
-  } catch (error: any) {
-    console.error('❌ POST /produtos: Erro na requisição', error.message);
+  } catch (error) {
+    console.error('❌ POST /produtos: Erro na requisição', error instanceof Error ? error.message : String(error));
   }
 
   // 4. Teste GET Pedidos (Sem Auth - Esperado 401 ou 403)
@@ -55,8 +55,8 @@ async function testEndpoints() {
     } else {
       console.error('❌ GET /pedidos: Erro inesperado', res.status);
     }
-  } catch (error: any) {
-    console.error('❌ GET /pedidos: Erro na requisição', error.message);
+  } catch (error) {
+    console.error('❌ GET /pedidos: Erro na requisição', error instanceof Error ? error.message : String(error));
   }
 
   console.log('\n🏁 Testes básicos concluídos.');

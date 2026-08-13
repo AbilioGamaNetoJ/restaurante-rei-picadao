@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { db } from "@/db";
-import { storeSettings } from "@/db/schema";
 import { StoreIcon } from "@/components/store/store-icons";
 import { CartDrawer } from "@/components/store/cart-drawer";
 import { auth } from "@clerk/nextjs/server";

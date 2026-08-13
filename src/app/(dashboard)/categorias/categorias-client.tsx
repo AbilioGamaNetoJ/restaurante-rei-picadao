@@ -10,7 +10,15 @@ import { Plus, Trash2, Edit2, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 
-export function CategoriasClient({ initialCategories }: { initialCategories: any[] }) {
+type Category = {
+  id: string;
+  name: string;
+  type: 'produto' | 'adicional';
+  sortOrder: number;
+  isActive: boolean;
+};
+
+export function CategoriasClient({ initialCategories }: { initialCategories: Category[] }) {
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -33,7 +41,7 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
     setIsOpen(true);
   };
 
-  const handleOpenEdit = (cat: any) => {
+  const handleOpenEdit = (cat: Category) => {
     setEditingId(cat.id);
     setFormData({
       name: cat.name,
@@ -60,7 +68,7 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
           toast.success('Categoria criada');
         }
         setIsOpen(false);
-      } catch (error) {
+      } catch {
         toast.error('Erro ao salvar categoria');
       }
     });
@@ -72,7 +80,7 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
       try {
         await deleteCategory(id);
         toast.success('Categoria excluída');
-      } catch (error) {
+      } catch {
         toast.error('Erro ao excluir categoria');
       }
     });
@@ -120,7 +128,7 @@ export function CategoriasClient({ initialCategories }: { initialCategories: any
                   id="type"
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                   value={formData.type}
-                  onChange={(e) => setFormData({...formData, type: e.target.value as any})}
+                  onChange={(e) => setFormData({...formData, type: e.target.value as 'produto' | 'adicional'})}
                 >
                   <option value="produto">Produto</option>
                   <option value="adicional">Adicional</option>

@@ -93,15 +93,11 @@ export function DashboardLayoutClient({
   storeName: string;
 }) {
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('dashboard_sidebar_collapsed') === 'true';
+  });
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem('dashboard_sidebar_collapsed');
-    if (stored !== null) {
-      setIsCollapsed(stored === 'true');
-    }
-  }, []);
 
   const allowedItems = menuItems.filter(item => can(role, item.permission));
 

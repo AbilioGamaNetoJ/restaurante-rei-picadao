@@ -14,8 +14,49 @@ import Image from 'next/image';
 import { UploadButton } from '@/lib/uploadthing';
 import { cn } from '@/lib/utils';
 
+type Category = {
+  id: string;
+  name: string;
+  slug: string;
+  type: 'produto' | 'adicional';
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type Addon = {
+  id: string;
+  name: string;
+  description: string | null;
+  price: string;
+  categoryId: string | null;
+  imageUrl: string | null;
+  isAvailable: boolean;
+  category: Category | null;
+};
+
+type Product = {
+  id: string;
+  categoryId: string;
+  name: string;
+  description: string | null;
+  price: string;
+  costPrice: string | null;
+  imageUrl: string | null;
+  servesPeople: number | null;
+  originalPrice: string | null;
+  isAvailable: boolean;
+  isFeatured: boolean;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+  categories: { productId: string; categoryId: string; category: Category }[];
+  addons: { id: string; productId: string; addonId: string }[];
+};
+
 // Helper functions for price formatting
-const toDisplayPrice = (val: any) => {
+const toDisplayPrice = (val: string | null | undefined) => {
   if (val === null || val === undefined) return '';
   const str = String(val);
   return str.replace(/\./g, ',');
@@ -51,7 +92,7 @@ const sanitizeAndFormatPrice = (value: string) => {
   return clean;
 };
 
-export function ProdutosClient({ initialProducts, categories, addons }: { initialProducts: any[], categories: any[], addons: any[] }) {
+export function ProdutosClient({ initialProducts, categories, addons }: { initialProducts: Product[], categories: Category[], addons: Addon[] }) {
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -87,18 +128,18 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
     setIsOpen(true);
   };
 
-  const handleOpenEdit = (product: any) => {
+  const handleOpenEdit = (product: Product) => {
     setEditingId(product.id);
     setFormData({
       name: product.name,
-      categoryIds: product.categories.map((c: any) => c.categoryId),
+      categoryIds: product.categories.map((c) => c.categoryId),
       description: product.description || '',
       price: toDisplayPrice(product.price),
       costPrice: toDisplayPrice(product.costPrice),
       imageUrl: product.imageUrl || '',
       isAvailable: product.isAvailable,
       sortOrder: product.sortOrder !== null && product.sortOrder !== undefined ? String(product.sortOrder) : '0',
-      addonsIds: product.addons.map((a: any) => a.addonId),
+      addonsIds: product.addons.map((a) => a.addonId),
       servesPeople: product.servesPeople || '',
       originalPrice: toDisplayPrice(product.originalPrice),
       isFeatured: product.isFeatured || false
@@ -132,7 +173,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
               toast.success('Produto criado com sucesso!', { style: { color: '#16a34a' } });
         }
         setIsOpen(false);
-      } catch (error) {
+      } catch {
         toast.error('Erro ao salvar produto', { style: { color: '#dc2626' } });
       }
     });
@@ -144,7 +185,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
       try {
         await deleteProduct(id);
         toast.success('Produto excluído com sucesso!', { style: { color: '#16a34a' } });
-      } catch (error) {
+      } catch {
         toast.error('Erro ao excluir produto', { style: { color: '#dc2626' } });
       }
     });
@@ -289,7 +330,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                     value={formData.originalPrice} 
                     onChange={(e) => setFormData({...formData, originalPrice: sanitizeAndFormatPrice(e.target.value)})} 
                   />
-                  <p className="text-[10px] text-muted-foreground">Isso mostrará "De R$ 89,90 por R$ [Preço de Venda]"</p>
+                  <p className="text-[10px] text-muted-foreground">Isso mostrará &quot;De R$ 89,90 por R$ [Preço de Venda]&quot;</p>
                 </div>
               </div>
 
@@ -446,7 +487,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                     );
                   })}
                   {addons.length === 0 && (
-                    <p className="text-xs text-muted-foreground italic">Nenhum adicional cadastrado. Vá na aba "Adicionais" para criar.</p>
+                    <p className="text-xs text-muted-foreground italic">Nenhum adicional cadastrado. Vá na aba &quot;Adicionais&quot; para criar.</p>
                   )}
                 </div>
               </div>
@@ -523,7 +564,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                   </div>
                   <div className="flex justify-between items-center mt-2">
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {product.categories.map((pc: any) => (
+                    {product.categories.map((pc) => (
                       <span key={pc.categoryId} className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
                         {pc.category.name}
                       </span>

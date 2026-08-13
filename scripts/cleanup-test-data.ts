@@ -13,9 +13,9 @@ async function cleanup() {
   console.log('🧹 Limpando dados de teste...');
 
   try {
-    const result = await db.delete(schema.orders)
+    await db.delete(schema.orders)
       .where(eq(schema.orders.id, '12345678-1234-1234-1234-123456789012'));
-    
+
     console.log('✅ Pedido de teste removido.');
   } catch (error) {
     console.error('❌ Erro ao limpar dados:', error);

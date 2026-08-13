@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { categories } from '@/db/schema';
-import { asc, desc } from 'drizzle-orm';
+import { asc } from 'drizzle-orm';
 import slugify from 'slugify';
 import { can, getRoleFromClaims } from '@/lib/permissions';
 
@@ -50,10 +50,10 @@ export async function POST(req: Request) {
     }).returning();
 
     return NextResponse.json(newCategory[0]);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating category:', error);
-    
-    if (error.code === '23505') { // Unique constraint violation
+
+    if (error instanceof Error && 'code' in error && error.code === '23505') { // Unique constraint violation
       return NextResponse.json(
         { error: 'Já existe uma categoria com este nome.' },
         { status: 400 }

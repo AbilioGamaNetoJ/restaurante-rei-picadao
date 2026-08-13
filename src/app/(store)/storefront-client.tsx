@@ -26,11 +26,39 @@ interface Category {
   isVirtual?: boolean;
 }
 
+interface ProductSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  price: string;
+  imageUrl: string | null;
+  addons?: Product['addons'];
+  servesPeople?: number | null;
+  originalPrice?: string | null;
+  isFeatured?: boolean;
+  categories: { categoryId: string }[];
+}
+
+interface StoreHour {
+  dayOfWeek: number;
+  openTime: string;
+  closeTime: string;
+}
+
+interface StoreSettings {
+  name?: string | null;
+  logoUrl?: string | null;
+  bannerUrl?: string | null;
+  address?: string | null;
+  deliveryRadiusKm?: string | null;
+  minOrder?: string | null;
+}
+
 interface StorefrontClientProps {
   categories: Category[];
-  products: any[];
-  hours: any[];
-  settings: any;
+  products: ProductSummary[];
+  hours: StoreHour[];
+  settings: StoreSettings | undefined;
 }
 
 export function StorefrontClient({ categories, products, hours, settings }: StorefrontClientProps) {
@@ -56,6 +84,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
   const categoryRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -138,6 +167,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
   const [openStatus, setOpenStatus] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpenStatus(isStoreOpen());
   }, [hours]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -165,7 +195,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
         {/* Logo */}
         <div className="w-28 h-28 md:w-40 md:h-40 rounded-full border-8 border-white bg-white shadow-2xl overflow-hidden flex-shrink-0 -mt-20 md:-mt-24 transition-transform duration-500 hover:scale-105">
           {settings?.logoUrl ? (
-            <img src={settings.logoUrl} alt={settings.name} className="w-full h-full object-cover" />
+            <img src={settings.logoUrl} alt={settings.name || "Logo"} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white">
               <span className="text-5xl font-semibold tracking-tighter">{settings?.name?.[0] || "R"}</span>
@@ -363,8 +393,8 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
         )}
 
         {categories.map((category) => {
-          const categoryProducts = products.filter(p => 
-            p.categories.some((c: any) => c.categoryId === category.id)
+          const categoryProducts = products.filter(p =>
+            p.categories.some((c) => c.categoryId === category.id)
           );
 
           if (categoryProducts.length === 0) return null;
@@ -445,10 +475,11 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
   );
 }
 
-function StoreStatusBadge({ hours, isStoreOpen }: { hours: any[], isStoreOpen: () => boolean }) {
+function StoreStatusBadge({ isStoreOpen }: { hours: StoreHour[], isStoreOpen: () => boolean }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -471,7 +502,7 @@ function StoreStatusBadge({ hours, isStoreOpen }: { hours: any[], isStoreOpen: (
   );
 }
 
-function ProductCard({ product, onClick }: { product: any, onClick: () => void }) {
+function ProductCard({ product, onClick }: { product: ProductSummary, onClick: () => void }) {
   return (
     <div 
       className="bg-white rounded-[1.5rem] md:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:border-red-100 transition-all duration-500 cursor-pointer flex flex-row md:flex-col group h-full ring-1 ring-black/[0.02]"
@@ -541,8 +572,9 @@ function ProductCard({ product, onClick }: { product: any, onClick: () => void }
 function CartBadge() {
   const [mounted, setMounted] = React.useState(false);
   const items = useCartStore((state) => state.items);
-  
+
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -562,6 +594,7 @@ function CartTotal() {
   const getTotal = useCartStore((state) => state.getTotal);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { updateUserRole, updateEmployee, deleteEmployee } from './actions';
 import Image from 'next/image';
-import { Edit2, Trash2, X, UserCheck, UserX } from 'lucide-react';
+import { Edit2, Trash2, UserCheck, UserX } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -18,8 +18,22 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 
+type EmployeeUser = {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | undefined;
+  imageUrl: string;
+  role: string;
+  salary: string | null | undefined;
+  position: string | null | undefined;
+  department: string | null | undefined;
+  isActive: boolean;
+  createdAt: Date | undefined;
+};
+
 // Helper functions for price formatting
-const toDisplayPrice = (val: any) => {
+const toDisplayPrice = (val: string | null | undefined) => {
   if (val === null || val === undefined) return '';
   const str = String(val);
   return str.replace(/\./g, ',');
@@ -55,7 +69,7 @@ const sanitizeAndFormatPrice = (value: string) => {
   return clean;
 };
 
-const formatSalary = (salary: any) => {
+const formatSalary = (salary: string | null | undefined) => {
   if (!salary) return '-';
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -65,10 +79,10 @@ const formatSalary = (salary: any) => {
 
 type FilterType = 'all' | 'active' | 'inactive';
 
-export function FuncionariosClient({ users, currentRole }: { users: any[], currentRole: string }) {
+export function FuncionariosClient({ users, currentRole }: { users: EmployeeUser[], currentRole: string }) {
   const [isPending, startTransition] = useTransition();
   const [filter, setFilter] = useState<FilterType>('all');
-  const [editDialog, setEditDialog] = useState<{ open: boolean; user: any }>({ open: false, user: null });
+  const [editDialog, setEditDialog] = useState<{ open: boolean; user: EmployeeUser | null }>({ open: false, user: null });
 
   const [formData, setFormData] = useState({
     position: '',
@@ -84,7 +98,7 @@ export function FuncionariosClient({ users, currentRole }: { users: any[], curre
     return true;
   });
 
-  const handleOpenEdit = (user: any) => {
+  const handleOpenEdit = (user: EmployeeUser) => {
     setEditDialog({ open: true, user });
     setFormData({
       position: user.position || '',
@@ -102,16 +116,17 @@ export function FuncionariosClient({ users, currentRole }: { users: any[], curre
   const handleSubmitEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editDialog.user) return;
+    const user = editDialog.user;
 
     startTransition(async () => {
       try {
         // Atualizar role se mudou
-        if (formData.role !== editDialog.user.role) {
-          await updateUserRole(editDialog.user.id, formData.role);
+        if (formData.role !== user.role) {
+          await updateUserRole(user.id, formData.role);
         }
 
         // Atualizar outros campos
-        await updateEmployee(editDialog.user.id, {
+        await updateEmployee(user.id, {
           position: formData.position || null,
           department: formData.department || null,
           salary: toBackendPrice(formData.salary) || null,
@@ -120,19 +135,9 @@ export function FuncionariosClient({ users, currentRole }: { users: any[], curre
 
         toast.success('Funcionário atualizado com sucesso!', { style: { color: '#16a34a' } });
         handleCloseEdit();
-      } catch (error: any) {
-        toast.error(error.message || 'Erro ao atualizar funcionário', { style: { color: '#dc2626' } });
-      }
-    });
-  };
-
-  const handleRoleChange = (userId: string, newRole: string) => {
-    startTransition(async () => {
-      try {
-        await updateUserRole(userId, newRole);
-        toast.success('Nível de acesso atualizado com sucesso!', { style: { color: '#16a34a' } });
-      } catch (error: any) {
-        toast.error(error.message || 'Erro ao atualizar nível de acesso', { style: { color: '#dc2626' } });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Erro ao atualizar funcionário';
+        toast.error(message, { style: { color: '#dc2626' } });
       }
     });
   };
@@ -144,8 +149,9 @@ export function FuncionariosClient({ users, currentRole }: { users: any[], curre
       try {
         await deleteEmployee(userId);
         toast.success('Funcionário excluído com sucesso!', { style: { color: '#16a34a' } });
-      } catch (error: any) {
-        toast.error(error.message || 'Erro ao excluir funcionário', { style: { color: '#dc2626' } });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Erro ao excluir funcionário';
+        toast.error(message, { style: { color: '#dc2626' } });
       }
     });
   };

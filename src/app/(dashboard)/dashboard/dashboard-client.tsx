@@ -13,8 +13,6 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   PieChart,
@@ -27,6 +25,7 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
+import type { ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getCategoryLabel } from '@/lib/expense-categories';
 
@@ -50,6 +49,19 @@ const COLORS = [
   '#f97316', // orange
 ];
 
+type MonthlyDataEntry = {
+  month: string;
+  monthName: string;
+  revenue: number;
+  expenses: number;
+  orders: number;
+};
+
+type ExpensesByCategoryEntry = {
+  category: string;
+  amount: number;
+};
+
 export function DashboardClient({
   monthRevenue,
   monthExpenses,
@@ -67,8 +79,8 @@ export function DashboardClient({
   capitalTotal: number;
   activeEmployeesCount: number;
   totalProducts: number;
-  monthlyData: any[];
-  expensesByCategory: any[];
+  monthlyData: MonthlyDataEntry[];
+  expensesByCategory: ExpensesByCategoryEntry[];
   currentMonth: Date;
 }) {
   const router = useRouter();
@@ -286,12 +298,12 @@ export function DashboardClient({
                   tickFormatter={(value) => `R$ ${value / 1000}k`}
                 />
                 <Tooltip
-                  formatter={(value: any) => formatCurrency(Number(value || 0))}
-                  contentStyle={{ 
-                    backgroundColor: '#ffffff', 
-                    border: 'none', 
-                    borderRadius: '12px', 
-                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' 
+                  formatter={(value: ValueType | undefined) => formatCurrency(Number(value || 0))}
+                  contentStyle={{
+                    backgroundColor: '#ffffff',
+                    border: 'none',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'
                   }}
                   cursor={{ fill: '#f8fafc' }}
                 />
@@ -326,8 +338,8 @@ export function DashboardClient({
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="hover:opacity-80 transition-opacity duration-200 outline-none" />
                     ))}
                   </Pie>
-                  <Tooltip 
-                    formatter={(value: any) => formatCurrency(Number(value || 0))} 
+                  <Tooltip
+                    formatter={(value: ValueType | undefined) => formatCurrency(Number(value || 0))}
                     contentStyle={{ 
                       backgroundColor: '#ffffff', 
                       border: 'none', 

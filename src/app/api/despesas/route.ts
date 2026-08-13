@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { expenses } from '@/db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { desc } from 'drizzle-orm';
 import { can, getRoleFromClaims } from '@/lib/permissions';
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const { userId, sessionClaims } = await auth();
     const role = getRoleFromClaims(sessionClaims);

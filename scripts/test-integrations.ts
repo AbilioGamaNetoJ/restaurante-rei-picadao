@@ -42,8 +42,8 @@ async function testIntegrations() {
       });
       console.log('✅ Pedido de teste criado.');
     }
-  } catch (err: any) {
-    console.error('❌ Erro ao preparar banco:', err.message);
+  } catch (err) {
+    console.error('❌ Erro ao preparar banco:', err instanceof Error ? err.message : String(err));
   }
 
   // 1. Teste de Frete (Google Maps)
@@ -66,8 +66,8 @@ async function testIntegrations() {
     } else {
       console.log(`❌ Frete: Erro (${res.status}): ${data.error}`);
     }
-  } catch (err: any) {
-    console.error('❌ Frete: Erro na requisição', err.message);
+  } catch (err) {
+    console.error('❌ Frete: Erro na requisição', err instanceof Error ? err.message : String(err));
   }
 
   // 2. Teste de Webhook Asaas (Simulação)
@@ -111,8 +111,8 @@ async function testIntegrations() {
       const data = await res.json().catch(() => ({}));
       console.log(`❌ Webhook Asaas: Falhou (${res.status})`, data.error || '');
     }
-  } catch (err: any) {
-    console.error('❌ Webhook Asaas: Erro na requisição', err.message);
+  } catch (err) {
+    console.error('❌ Webhook Asaas: Erro na requisição', err instanceof Error ? err.message : String(err));
   }
 
   // 3. Teste de Webhook Clerk (Simulação de Usuário)
@@ -140,8 +140,8 @@ async function testIntegrations() {
     } else {
       console.log(`❌ Webhook Clerk: Falhou (${res.status})`);
     }
-  } catch (err: any) {
-    console.error('❌ Webhook Clerk: Erro na requisição', err.message);
+  } catch (err) {
+    console.error('❌ Webhook Clerk: Erro na requisição', err instanceof Error ? err.message : String(err));
   }
 
   console.log('\n🏁 Fim dos testes de integração.');

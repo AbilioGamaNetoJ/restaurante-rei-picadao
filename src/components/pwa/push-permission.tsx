@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bell, BellOff, X } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
 
 const PUSH_ASKED_KEY = 'pwa_push_asked';
 
@@ -12,6 +12,7 @@ export function PushPermission() {
 
   useEffect(() => {
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPermission('unsupported');
       return;
     }
@@ -51,35 +52,6 @@ export function PushPermission() {
   const handleDismiss = () => {
     localStorage.setItem(PUSH_ASKED_KEY, 'true');
     setIsVisible(false);
-  };
-
-  // Enable/Disable toggle for granted state
-  const handleToggle = async () => {
-    if (permission !== 'granted') return;
-
-    setIsSubscribing(true);
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      const existing = await registration.pushManager.getSubscription();
-
-      if (existing) {
-        // Unsubscribe
-        await existing.unsubscribe();
-        await fetch('/api/push/subscribe', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ endpoint: existing.endpoint }),
-        });
-        console.log('[push] Unsubscribed');
-      } else {
-        // Re-subscribe
-        await subscribeToPush();
-      }
-    } catch (error) {
-      console.error('[push] Toggle failed:', error);
-    } finally {
-      setIsSubscribing(false);
-    }
   };
 
   if (permission === 'unsupported') return null;
@@ -153,8 +125,8 @@ async function subscribeToPush() {
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidKey),
       });
-    } catch (err: any) {
-      if (err.name === 'InvalidStateError' || String(err).includes('applicationServerKey')) {
+    } catch (err) {
+      if ((err instanceof Error && err.name === 'InvalidStateError') || String(err).includes('applicationServerKey')) {
         console.warn('[push] Invalid applicationServerKey, unsubscribing old subscription...');
         const oldSub = await registration.pushManager.getSubscription();
         if (oldSub) await oldSub.unsubscribe();

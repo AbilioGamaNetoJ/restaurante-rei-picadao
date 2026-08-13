@@ -2,7 +2,7 @@ import * as React from 'react';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { expenses, orders } from '@/db/schema';
+import { expenses } from '@/db/schema';
 import { FinanceiroClient } from './financeiro-client';
 import { desc } from 'drizzle-orm';
 import { can, getRoleFromClaims } from '@/lib/permissions';

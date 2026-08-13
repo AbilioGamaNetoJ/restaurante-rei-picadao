@@ -19,7 +19,7 @@ export default async function ConfiguracoesPage() {
   const settings = await db.select().from(storeSettings).limit(1);
   const currentSettings = settings[0] || null;
 
-  let currentHours: any[] = [];
+  let currentHours: typeof storeHours.$inferSelect[] = [];
   if (currentSettings) {
     currentHours = await db.select().from(storeHours).where(eq(storeHours.storeId, currentSettings.id));
   }

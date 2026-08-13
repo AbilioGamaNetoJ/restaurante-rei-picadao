@@ -29,7 +29,7 @@ export default async function FuncionariosPage() {
         lastName: user.lastName,
         email: user.emailAddresses[0]?.emailAddress,
         imageUrl: user.imageUrl,
-        role: user.publicMetadata?.role || 'cliente',
+        role: typeof user.publicMetadata?.role === 'string' ? user.publicMetadata.role : 'cliente',
         // Dados extras do banco
         salary: dbUser?.salary,
         position: dbUser?.position,

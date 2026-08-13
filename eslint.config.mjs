@@ -24,6 +24,8 @@ const eslintConfig = defineConfig([
     "e2e/**",
     "playwright-report/**",
     "test-results/**",
+    "scratch/**",
+    ".opencode/**",
   ]),
 ]);
 

@@ -82,7 +82,7 @@ export default async function DashboardPage(props: {
   const [
     monthRevenueResult,
     monthExpensesResult,
-    totalOrdersResult,
+    ,
     activeEmployeesCount,
     totalProducts,
   ] = await Promise.all([
@@ -134,7 +134,6 @@ export default async function DashboardPage(props: {
   const monthRevenue = Number(monthRevenueResult[0]?.total || 0);
   const monthExpenses = Number(monthExpensesResult[0]?.total || 0) + totalMonthlySalaries;
   const operatingBalance = monthRevenue - monthExpenses;
-  const totalOrders = Number(totalOrdersResult[0]?.count || 0);
   const activeEmployeesCountNum = Number(activeEmployeesCount[0]?.count || 0);
   const totalProductsNum = Number(totalProducts[0]?.count || 0);
 
@@ -181,7 +180,13 @@ export default async function DashboardPage(props: {
   });
 
   // Fill missing months
-  const completeMonthlyData: any[] = [];
+  const completeMonthlyData: {
+    month: string;
+    monthName: string;
+    revenue: number;
+    expenses: number;
+    orders: number;
+  }[] = [];
   for (let i = 11; i >= 0; i--) {
     const d = getMonthStart(i);
     const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;

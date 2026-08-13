@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useTransition, useEffect } from 'react';
+import React, { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { EXPENSE_CATEGORIES, getCategoryLabel } from '@/lib/expense-categories';
 
 // Helper functions for price formatting
-const toDisplayPrice = (val: any) => {
+const toDisplayPrice = (val: string | number | null | undefined) => {
   if (val === null || val === undefined) return '';
   const str = String(val);
   return str.replace(/\./g, ',');
@@ -49,7 +49,16 @@ const sanitizeAndFormatPrice = (value: string) => {
   return clean;
 };
 
-export function FinanceiroClient({ initialExpenses }: { initialExpenses: any[] }) {
+type Expense = {
+  id: string;
+  description: string;
+  amount: string;
+  category: string;
+  createdBy: string;
+  createdAt: Date;
+};
+
+export function FinanceiroClient({ initialExpenses }: { initialExpenses: Expense[] }) {
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -77,7 +86,7 @@ export function FinanceiroClient({ initialExpenses }: { initialExpenses: any[] }
     setIsOpen(true);
   };
 
-  const handleOpenEdit = (expense: any) => {
+  const handleOpenEdit = (expense: Expense) => {
     setEditingId(expense.id);
     setFormData({
       description: expense.description,
@@ -121,7 +130,7 @@ export function FinanceiroClient({ initialExpenses }: { initialExpenses: any[] }
           toast.success('Despesa registrada com sucesso!', { style: { color: '#16a34a' } });
         }
         handleCloseDialog();
-      } catch (error) {
+      } catch {
         toast.error('Erro ao salvar despesa', { style: { color: '#dc2626' } });
       }
     });
@@ -133,7 +142,7 @@ export function FinanceiroClient({ initialExpenses }: { initialExpenses: any[] }
       try {
         await deleteExpense(id);
         toast.success('Despesa excluída com sucesso!', { style: { color: '#16a34a' } });
-      } catch (error) {
+      } catch {
         toast.error('Erro ao excluir despesa', { style: { color: '#dc2626' } });
       }
     });

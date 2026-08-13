@@ -49,8 +49,8 @@ async function testOrderFlow() {
     await db.delete(orders).where(eq(orders.id, newOrder.id));
     console.log('\n✅ Teste de fluxo concluído com sucesso.');
 
-  } catch (error: any) {
-    console.error('❌ Erro no teste de fluxo:', error.message);
+  } catch (error) {
+    console.error('❌ Erro no teste de fluxo:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }

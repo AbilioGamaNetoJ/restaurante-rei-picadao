@@ -19,7 +19,8 @@ export function InstallPrompt() {
   useEffect(() => {
     // Check if already installed
     const standalone = window.matchMedia('(display-mode: standalone)').matches
-      || (window.navigator as any).standalone === true;
+      || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsStandalone(standalone);
 
     if (standalone) return;

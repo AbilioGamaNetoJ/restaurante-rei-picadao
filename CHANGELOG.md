@@ -7,6 +7,24 @@ e este projeto adere a [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [0.2.1] - 2026-08-13
+
+### Qualidade de codigo
+
+Zerados os 86 erros e reduzidos os 54 warnings do ESLint/TypeScript reportados por `npm run security:scan`, sem alterar comportamento.
+
+- **Tipagem estrita**: todas as ocorrencias de `any` em rotas de API, server actions e componentes do dashboard/storefront substituidas por tipos explicitos derivados do schema Drizzle ou dos componentes consumidores (`categorias`, `configuracoes`, `dashboard`, `financeiro`, `funcionarios`, `pedidos`, `produtos`, `storefront-client.tsx`, componentes PWA).
+- **React hooks**: avisos de `setState` sincrono dentro de `useEffect` (`react-hooks/set-state-in-effect`) suprimidos com `eslint-disable-next-line` nos casos legitimos de hydration guard (`mounted`), seguindo o padrao ja existente em `dashboard-layout-client.tsx`; `isCollapsed` do sidebar do dashboard migrado para lazy-init do `useState` (elimina um `useEffect` desnecessario).
+- **Limpeza**: imports, variaveis e funcoes nao utilizadas removidas (`StoreIcon`, `LineChart`/`Line`, `handleRoleChange`, `orderItems`/`orderItemAddons`, `storeSettings`, entre outros); blocos `catch` sem uso do erro convertidos para `catch {}` ou com narrowing via `instanceof Error`; aspas retas em JSX escapadas com `&quot;`.
+- **Scripts utilitarios**: `scratch/` e `.opencode/` excluidos do ESLint via `globalIgnores` (scripts de debug/skill, fora do app); `any` em `scripts/*.ts` substituido por `error instanceof Error ? error.message : String(error)`.
+- Restam apenas warnings nao-bloqueantes de `<img>` (sugestao de `next/image`) e um `exhaustive-deps` pre-existente.
+
+### Alterado
+
+- `eslint.config.mjs`: `scratch/**` e `.opencode/**` adicionados ao `globalIgnores`.
+
+---
+
 ## [0.2.0] - 2026-08-13
 
 ### Seguranca
