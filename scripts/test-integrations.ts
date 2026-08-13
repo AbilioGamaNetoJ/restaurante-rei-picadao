@@ -62,9 +62,9 @@ async function testIntegrations() {
     });
     const data = await res.json();
     if (res.ok) {
-      console.log(`✅ Frete: OK (Distância: ${data.distanceKm}km, Valor: R$${data.deliveryFee})`);
+      console.log(`✅ Frete: OK (Distância: ${Number(data.distanceKm)}km, Valor: R$${Number(data.deliveryFee)})`);
     } else {
-      console.log(`❌ Frete: Erro (${res.status}): ${data.error}`);
+      console.log(`❌ Frete: Erro (status ${res.status})`);
     }
   } catch (err) {
     console.error('❌ Frete: Erro na requisição', err instanceof Error ? err.message : String(err));
@@ -98,18 +98,16 @@ async function testIntegrations() {
       const updatedOrder = results[0];
       
       if (updatedOrder) {
-        console.log(`📦 Conteúdo do pedido: Status=${updatedOrder.status}, PaymentStatus=${updatedOrder.paymentStatus}`);
         if (updatedOrder.status === 'paid') {
           console.log('✅ Banco de Dados: Status do pedido atualizado para "paid"');
         } else {
-          console.log(`❌ Banco de Dados: Status esperado "paid", mas está "${updatedOrder.status}"`);
+          console.log('❌ Banco de Dados: Status do pedido não foi atualizado para "paid"');
         }
       } else {
         console.log('❌ Banco de Dados: Pedido NÃO encontrado após o webhook');
       }
     } else {
-      const data = await res.json().catch(() => ({}));
-      console.log(`❌ Webhook Asaas: Falhou (${res.status})`, data.error || '');
+      console.log(`❌ Webhook Asaas: Falhou (status ${res.status})`);
     }
   } catch (err) {
     console.error('❌ Webhook Asaas: Erro na requisição', err instanceof Error ? err.message : String(err));
