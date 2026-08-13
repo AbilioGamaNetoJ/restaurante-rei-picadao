@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
 const MAX_ORDER_ITEMS = 20;

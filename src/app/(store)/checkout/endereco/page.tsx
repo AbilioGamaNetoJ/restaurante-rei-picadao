@@ -106,7 +106,7 @@ export default function EnderecoPage() {
   };
 
 
-  const VALID_DDDS = [
+  const VALID_DDDS = new Set([
     '11', '12', '13', '14', '15', '16', '17', '18', '19',
     '21', '22', '24', '27', '28', '31', '32', '33', '34',
     '35', '37', '38', '41', '42', '43', '44', '45', '46',
@@ -115,7 +115,7 @@ export default function EnderecoPage() {
     '74', '75', '77', '79', '81', '87', '82', '83', '84',
     '85', '88', '86', '89', '91', '93', '94', '92', '97',
     '95', '96', '98', '99'
-  ];
+  ]);
 
   const checkoutSchema = z.object({
     customerName: z.string().min(3, 'Nome muito curto'),
@@ -126,7 +126,7 @@ export default function EnderecoPage() {
     customerPhone: z.string()
       .transform(v => v.replace(/\D/g, ''))
       .refine(v => v.length === 11, 'O telefone deve ter exatamente 11 números (DDD + número)')
-      .refine(v => VALID_DDDS.includes(v.slice(0, 2)), 'O DDD informado não é válido no Brasil'),
+      .refine(v => VALID_DDDS.has(v.slice(0, 2)), 'O DDD informado não é válido no Brasil'),
     customerCpfCnpj: z.string().transform(v => v.replace(/\D/g, '')).refine(v => [11, 14].includes(v.length), 'CPF ou CNPJ inválido'),
     addressZip: z.string().transform(v => v.replace(/\D/g, '')).refine(v => v.length === 8, 'CEP inválido'),
     addressStreet: z.string().min(3, 'Rua inválida'),

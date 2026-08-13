@@ -31,6 +31,7 @@ export function CartDrawer({ trigger }: Readonly<{ trigger?: React.ReactElement 
 
   const defaultTrigger = (
     <button
+      type="button"
       className="relative inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
     >
       <ShoppingCart className="h-5 w-5" />
@@ -43,35 +44,25 @@ export function CartDrawer({ trigger }: Readonly<{ trigger?: React.ReactElement 
   );
 
 
-  return (
-    <Sheet open={isDrawerOpen} onOpenChange={setDrawerOpen}>
-      <SheetTrigger render={trigger || defaultTrigger} nativeButton={true} onClick={() => setDrawerOpen(true)} />
-      <SheetContent className="w-full sm:max-w-md flex flex-col h-full">
-        <SheetHeader className="border-b">
-          <div className="flex items-center justify-between pr-8">
-            <SheetTitle className="text-lg font-bold">Seu Carrinho</SheetTitle>
-            {mounted && items.length > 0 && (
-              <span className="text-xs font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                {items.length} {items.length === 1 ? 'item' : 'itens'}
-              </span>
-            )}
-          </div>
-        </SheetHeader>
-        
-        <div className="flex-1 overflow-hidden py-4 px-4">
-          {!mounted ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-              <div className="h-12 w-12 mb-4 animate-pulse bg-muted rounded-full" />
-              <p>Carregando...</p>
-            </div>
-          ) : items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-              <ShoppingCart className="h-12 w-12 mb-4 opacity-20" />
-              <p>Seu carrinho está vazio.</p>
-              <p className="text-sm">Adicione itens para continuar.</p>
-            </div>
-          ) : (
-            <ScrollArea className="h-full">
+  let cartContent: React.ReactNode;
+  if (!mounted) {
+    cartContent = (
+      <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+        <div className="h-12 w-12 mb-4 animate-pulse bg-muted rounded-full" />
+        <p>Carregando...</p>
+      </div>
+    );
+  } else if (items.length === 0) {
+    cartContent = (
+      <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+        <ShoppingCart className="h-12 w-12 mb-4 opacity-20" />
+        <p>Seu carrinho está vazio.</p>
+        <p className="text-sm">Adicione itens para continuar.</p>
+      </div>
+    );
+  } else {
+    cartContent = (
+      <ScrollArea className="h-full">
               <div className="space-y-3">
                 {items.map((item) => (
                   <div key={item.id} className="flex gap-3 rounded-lg border bg-card p-3">
@@ -132,6 +123,7 @@ export function CartDrawer({ trigger }: Readonly<{ trigger?: React.ReactElement 
                       <div className="flex justify-between items-center pt-2">
                         <div className="flex items-center space-x-2 border rounded-md px-2 py-1">
                           <button 
+                            type="button"
                             onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
                             className="text-muted-foreground hover:text-foreground"
                           >
@@ -139,6 +131,7 @@ export function CartDrawer({ trigger }: Readonly<{ trigger?: React.ReactElement 
                           </button>
                           <span className="text-sm font-medium w-4 text-center">{item.quantity}</span>
                           <button 
+                            type="button"
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             className="text-muted-foreground hover:text-foreground"
                           >
@@ -154,7 +147,26 @@ export function CartDrawer({ trigger }: Readonly<{ trigger?: React.ReactElement 
                 ))}
               </div>
             </ScrollArea>
-          )}
+    );
+  }
+
+  return (
+    <Sheet open={isDrawerOpen} onOpenChange={setDrawerOpen}>
+      <SheetTrigger render={trigger || defaultTrigger} nativeButton={true} onClick={() => setDrawerOpen(true)} />
+      <SheetContent className="w-full sm:max-w-md flex flex-col h-full">
+        <SheetHeader className="border-b">
+          <div className="flex items-center justify-between pr-8">
+            <SheetTitle className="text-lg font-bold">Seu Carrinho</SheetTitle>
+            {mounted && items.length > 0 && (
+              <span className="text-xs font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                {items.length} {items.length === 1 ? 'item' : 'itens'}
+              </span>
+            )}
+          </div>
+        </SheetHeader>
+
+        <div className="flex-1 overflow-hidden py-4 px-4">
+          {cartContent}
         </div>
 
         {items.length > 0 && (

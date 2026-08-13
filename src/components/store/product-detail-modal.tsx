@@ -190,6 +190,53 @@ export function ProductDetailModal({ product, isOpen, onClose }: Readonly<Produc
 
   const total = productPrice * quantity + addonsTotal;
 
+  const renderAddonAction = (item: { addon: Addon }, catName: string) => {
+    const quantitySelected = selectedAddons[item.addon.id];
+
+    if (isSauceCategory(catName)) {
+      if (quantitySelected) {
+        return (
+          <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, false, catName)} className="h-8">
+            Remover
+          </Button>
+        );
+      }
+      return (
+        <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, true, catName)} className="h-8">
+          Adicionar
+        </Button>
+      );
+    }
+
+    if (quantitySelected) {
+      return (
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, -1)}>-</Button>
+          <span className="text-sm font-medium min-w-[20px] text-center">{quantitySelected}</span>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => handleAddonQuantityChange(item.addon.id, 1)}
+            disabled={catName === 'Bebidas' && bebidasTotalQty >= 2}
+          >+</Button>
+        </div>
+      );
+    }
+
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-8"
+        onClick={() => handleAddonToggle(item.addon.id, true, catName)}
+        disabled={catName === 'Bebidas' && bebidasTotalQty >= 2}
+      >
+        Adicionar
+      </Button>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-0">
@@ -262,39 +309,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: Readonly<Produc
                           </div>
                         </div>
                         
-                        {isSauceCategory(catName) ? (
-                          selectedAddons[item.addon.id] ? (
-                            <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, false, catName)} className="h-8">
-                              Remover
-                            </Button>
-                          ) : (
-                            <Button variant="outline" size="sm" onClick={() => handleAddonToggle(item.addon.id, true, catName)} className="h-8">
-                              Adicionar
-                            </Button>
-                          )
-                        ) : selectedAddons[item.addon.id] ? (
-                          <div className="flex items-center space-x-2">
-                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAddonQuantityChange(item.addon.id, -1)}>-</Button>
-                            <span className="text-sm font-medium min-w-[20px] text-center">{selectedAddons[item.addon.id]}</span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleAddonQuantityChange(item.addon.id, 1)}
-                              disabled={catName === 'Bebidas' && bebidasTotalQty >= 2}
-                            >+</Button>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8"
-                            onClick={() => handleAddonToggle(item.addon.id, true, catName)}
-                            disabled={catName === 'Bebidas' && bebidasTotalQty >= 2}
-                          >
-                            Adicionar
-                          </Button>
-                        )}
+                        {renderAddonAction(item, catName)}
                       </div>
                     ))}
                   </div>

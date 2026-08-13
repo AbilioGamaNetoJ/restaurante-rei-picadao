@@ -9,9 +9,9 @@ import { PushPermission } from '@/components/pwa/push-permission';
 
 export default async function DashboardLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   const { userId, sessionClaims } = await auth();
   const user = await currentUser();
   const role = (sessionClaims?.metadata as { role?: string })?.role || 'cliente';

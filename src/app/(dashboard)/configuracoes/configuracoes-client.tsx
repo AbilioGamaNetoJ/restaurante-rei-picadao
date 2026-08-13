@@ -33,6 +33,8 @@ type StoreHour = {
   closeTime: string;
 };
 
+type StoreHourRow = StoreHour & { id: string };
+
 export function ConfiguracoesClient({
   initialSettings,
   initialHours
@@ -53,7 +55,9 @@ export function ConfiguracoesClient({
     bannerUrl: initialSettings?.bannerUrl || '',
   });
 
-  const [hours, setHours] = useState<StoreHour[]>(initialHours || []);
+  const [hours, setHours] = useState<StoreHourRow[]>(
+    () => (initialHours || []).map((hour) => ({ ...hour, id: crypto.randomUUID() }))
+  );
 
   const handleSettingsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +88,7 @@ export function ConfiguracoesClient({
   };
 
   const addHour = () => {
-    setHours([...hours, { dayOfWeek: 1, openTime: '18:00', closeTime: '23:00' }]);
+    setHours([...hours, { id: crypto.randomUUID(), dayOfWeek: 1, openTime: '18:00', closeTime: '23:00' }]);
   };
 
   const removeHour = (index: number) => {
@@ -218,6 +222,7 @@ export function ConfiguracoesClient({
                         className="w-full h-full object-cover rounded-full bg-white border shadow-sm" 
                       />
                       <button 
+                        type="button"
                         onClick={() => setSettings({...settings, logoUrl: ''})}
                         className="absolute -top-2 -right-2 bg-red-600 text-white p-1 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
                       >
@@ -348,7 +353,7 @@ export function ConfiguracoesClient({
             ) : (
               <div className="space-y-4">
                 {hours.map((hour, index) => (
-                  <div key={index} className="flex flex-col sm:flex-row gap-4 items-start sm:items-end border p-4 rounded-md">
+                  <div key={hour.id} className="flex flex-col sm:flex-row gap-4 items-start sm:items-end border p-4 rounded-md">
                     <div className="space-y-2 w-full sm:flex-1">
                       <Label>Dia da Semana</Label>
                       <select 

@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     }
 
     const payment = await getPaymentByExternalReference(order.id);
-    if (!payment || payment.billingType !== 'PIX') {
+    if (payment?.billingType !== 'PIX') {
       return NextResponse.json({ qrCode: null }, { headers: rateLimitHeaders });
     }
 

@@ -102,6 +102,7 @@ export function CategoriasClient({ initialCategories }: Readonly<{ initialCatego
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger nativeButton={true} render={
             <button 
+              type="button"
               onClick={handleOpenNew}
               className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
             >

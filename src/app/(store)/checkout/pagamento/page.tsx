@@ -185,6 +185,7 @@ export default function PagamentoPage() {
         <h2 className="text-lg font-semibold mb-4">Forma de Pagamento</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
+            type="button"
             onClick={() => setBillingType('PIX')}
             className={`flex flex-col items-center justify-center p-6 border-2 rounded-xl transition-all ${
               billingType === 'PIX'
@@ -199,6 +200,7 @@ export default function PagamentoPage() {
           </button>
           
           <button
+            type="button"
             onClick={() => setBillingType('CREDIT_CARD')}
             className={`flex flex-col items-center justify-center p-6 border-2 rounded-xl transition-all ${
               billingType === 'CREDIT_CARD'

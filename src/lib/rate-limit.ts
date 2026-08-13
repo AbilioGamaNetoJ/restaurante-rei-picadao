@@ -3,7 +3,7 @@ import { Redis } from '@upstash/redis';
 
 type RateLimitScope = 'checkout' | 'freight' | 'orderStatus' | 'pixQrCode' | 'pushSubscription' | 'upload';
 
-type RateLimitResult = {
+export type RateLimitResult = {
   success: boolean;
   limit: number;
   remaining: number;

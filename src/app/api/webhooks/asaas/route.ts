@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from 'crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -25,12 +25,59 @@ const cancelledEvents = new Set([
   'PAYMENT_REPROVED_BY_RISK_ANALYSIS',
 ]);
 
+type WebhookPayment = z.infer<typeof webhookSchema>['payment'];
+
 function hasValidWebhookToken(receivedToken: string | null, configuredToken: string | undefined) {
   if (!receivedToken || !configuredToken) return false;
 
   const receivedHash = createHash('sha256').update(receivedToken).digest();
   const configuredHash = createHash('sha256').update(configuredToken).digest();
   return timingSafeEqual(receivedHash, configuredHash);
+}
+
+async function handlePaidPayment(order: typeof orders.$inferSelect, payment: WebhookPayment) {
+  if (order.status === 'cancelled') {
+    try {
+      await refundPayment(payment.id);
+    } catch {
+      console.error('Late payment refund failed', { orderId: order.id });
+      return NextResponse.json({ error: 'Refund pending' }, { status: 500 });
+    }
+    return NextResponse.json({ received: true });
+  }
+
+  if (order.status !== 'pending') return null;
+
+  const [updatedOrder] = await db.update(orders)
+    .set({
+      status: 'paid',
+      paymentId: payment.id,
+      paymentMethod: payment.billingType ?? null,
+      paymentStatus: payment.status ?? null,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(orders.id, order.id), eq(orders.status, 'pending')))
+    .returning({ id: orders.id });
+
+  if (updatedOrder) await sendOrderPushNotifications(order.id);
+  return null;
+}
+
+async function handleCancelledPayment(order: typeof orders.$inferSelect, payment: WebhookPayment) {
+  if (['delivered', 'cancelled'].includes(order.status)) return;
+
+  await db.update(orders)
+    .set({
+      status: 'cancelled',
+      paymentId: payment.id,
+      paymentMethod: payment.billingType ?? null,
+      paymentStatus: payment.status ?? null,
+      updatedAt: new Date(),
+    })
+    .where(and(
+      eq(orders.id, order.id),
+      inArray(orders.status, ['pending', 'paid', 'preparing', 'ready', 'delivering']),
+    ));
 }
 
 export async function POST(request: Request) {
@@ -63,47 +110,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    if (paidEvents.has(event)) {
-      if (order.status === 'cancelled') {
-        try {
-          await refundPayment(payment.id);
-        } catch {
-          console.error('Late payment refund failed', { orderId: order.id });
-          return NextResponse.json({ error: 'Refund pending' }, { status: 500 });
-        }
-        return NextResponse.json({ received: true });
-      }
-
-      if (order.status === 'pending') {
-        const [updatedOrder] = await db.update(orders)
-          .set({
-            status: 'paid',
-            paymentId: payment.id,
-            paymentMethod: payment.billingType ?? null,
-            paymentStatus: payment.status ?? null,
-            updatedAt: new Date(),
-          })
-          .where(and(eq(orders.id, order.id), eq(orders.status, 'pending')))
-          .returning({ id: orders.id });
-
-        if (updatedOrder) await sendOrderPushNotifications(order.id);
-      }
-    }
-
-    if (cancelledEvents.has(event) && !['delivered', 'cancelled'].includes(order.status)) {
-      await db.update(orders)
-        .set({
-          status: 'cancelled',
-          paymentId: payment.id,
-          paymentMethod: payment.billingType ?? null,
-          paymentStatus: payment.status ?? null,
-          updatedAt: new Date(),
-        })
-        .where(and(
-          eq(orders.id, order.id),
-          inArray(orders.status, ['pending', 'paid', 'preparing', 'ready', 'delivering']),
-        ));
-    }
+    const eventResponse = paidEvents.has(event)
+      ? await handlePaidPayment(order, payment)
+      : await handleCancelledPayment(order, payment);
+    if (eventResponse) return eventResponse;
 
     revalidatePath('/dashboard');
     revalidatePath('/pedidos');

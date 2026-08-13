@@ -72,6 +72,7 @@ export function InstallPrompt() {
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500" />
 
         <button
+          type="button"
           onClick={handleDismiss}
           className="absolute top-3 right-3 p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           aria-label="Fechar"
@@ -95,12 +96,14 @@ export function InstallPrompt() {
 
         <div className="flex gap-3 mt-4">
           <button
+            type="button"
             onClick={handleDismiss}
             className="flex-1 py-2.5 px-4 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-colors"
           >
             Agora não
           </button>
           <button
+            type="button"
             onClick={handleInstall}
             className="flex-1 py-2.5 px-4 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all shadow-lg shadow-red-200 hover:shadow-red-300 flex items-center justify-center gap-2 active:scale-95"
           >

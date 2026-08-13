@@ -1,5 +1,3 @@
-import { ShoppingCart, Clock, Info, Star, Bike, Store } from "lucide-react";
-
 export function StoreIcon({ className }: Readonly<{ className?: string }>) {
   return (
     <svg 
@@ -20,4 +18,4 @@ export function StoreIcon({ className }: Readonly<{ className?: string }>) {
   );
 }
 
-export { ShoppingCart, Clock, Info, Star, Bike, Store };
+export { ShoppingCart, Clock, Info, Star, Bike, Store } from "lucide-react";

@@ -32,7 +32,7 @@ interface ProductSummary {
   description: string | null;
   price: string;
   imageUrl: string | null;
-  addons?: Product['addons'];
+  addons: Product['addons'];
   servesPeople?: number | null;
   originalPrice?: string | null;
   isFeatured?: boolean;
@@ -263,6 +263,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Read
           />
           {searchQuery ? (
             <button
+              type="button"
               onClick={() => setSearchQuery("")}
               className="absolute right-4 text-gray-400 hover:text-gray-600 transition-colors"
             >
@@ -342,6 +343,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Read
                   Tente buscar por outro nome ou categoria
                 </p>
                 <button
+                  type="button"
                   onClick={() => setSearchQuery("")}
                   className="mt-2 text-red-600 font-bold hover:underline"
                 >
@@ -454,7 +456,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Read
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 md:hidden w-full px-6 max-w-lg">
           <CartDrawer 
             trigger={
-              <button className="w-full flex items-center justify-between bg-gray-900 text-white px-8 py-5 rounded-[2rem] shadow-2xl shadow-black/20 hover:scale-[1.02] transition-all active:scale-95 group relative overflow-hidden">
+              <button type="button" className="w-full flex items-center justify-between bg-gray-900 text-white px-8 py-5 rounded-[2rem] shadow-2xl shadow-black/20 hover:scale-[1.02] transition-all active:scale-95 group relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-orange-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="relative flex items-center gap-4">
                   <div className="relative bg-white/20 p-2 rounded-xl">
@@ -485,36 +487,38 @@ function StoreStatusBadge({ isStoreOpen }: Readonly<{ hours: StoreHour[], isStor
 
   const isOpen = mounted ? isStoreOpen() : false;
 
+  let statusClassName: string;
+  let statusLabel: string;
+  if (!mounted) {
+    statusClassName = "bg-gray-50 text-gray-400 border-gray-200";
+    statusLabel = "• Verificando...";
+  } else if (isOpen) {
+    statusClassName = "bg-green-50 text-green-600 border-green-200";
+    statusLabel = "• Aberto agora";
+  } else {
+    statusClassName = "bg-red-50 text-red-600 border-red-200";
+    statusLabel = "• Fechado";
+  }
+
   return (
     <div
       suppressHydrationWarning
       className={cn(
         "self-center md:self-auto px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-widest border transition-colors",
-        !mounted
-          ? "bg-gray-50 text-gray-400 border-gray-200"
-          : isOpen
-            ? "bg-green-50 text-green-600 border-green-200"
-            : "bg-red-50 text-red-600 border-red-200"
+        statusClassName
       )}
     >
-      {!mounted ? "• Verificando..." : isOpen ? "• Aberto agora" : "• Fechado"}
+      {statusLabel}
     </div>
   );
 }
 
 function ProductCard({ product, onClick }: Readonly<{ product: ProductSummary, onClick: () => void }>) {
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      className="bg-white rounded-[1.5rem] md:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:border-red-100 transition-all duration-500 cursor-pointer flex flex-row md:flex-col group h-full ring-1 ring-black/[0.02]"
+    <button
+      type="button"
+      className="bg-white rounded-[1.5rem] md:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:border-red-100 transition-all duration-500 cursor-pointer flex flex-row md:flex-col group h-full ring-1 ring-black/[0.02] text-left"
       onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick();
-        }
-      }}
     >
       <div className="p-3 md:p-4 shrink-0">
         <div className="relative w-[110px] h-[110px] md:w-full md:h-auto md:aspect-[4/3] overflow-hidden bg-gray-50 rounded-xl md:rounded-2xl">
@@ -573,7 +577,7 @@ function ProductCard({ product, onClick }: Readonly<{ product: ProductSummary, o
           )}
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 

@@ -36,7 +36,7 @@ export async function deleteOrder(orderId: string) {
   }
 
   const order = await db.query.orders.findFirst({ where: eq(orders.id, orderId) });
-  if (!order || order.status !== 'cancelled') {
+  if (order?.status !== 'cancelled') {
     throw new Error('Apenas pedidos cancelados podem ser excluídos');
   }
 

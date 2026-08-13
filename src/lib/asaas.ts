@@ -36,6 +36,14 @@ type AsaasCustomerCreate = AsaasCustomerUpdate & {
   cpfCnpj: string;
 };
 
+type CustomerAddress = {
+  addressZip: string;
+  addressStreet: string;
+  addressNumber: string;
+  addressComplement?: string;
+  addressNeighborhood: string;
+};
+
 type AsaasCheckoutCreate = {
   customer: string;
   billingType: 'PIX' | 'CREDIT_CARD' | 'UNDEFINED';
@@ -46,110 +54,103 @@ type AsaasCheckoutCreate = {
   callback: { successUrl: string; autoRedirect: boolean };
 };
 
-export async function createAsaasCustomer(
-  name: string, 
-  email: string, 
-  phone: string, 
-  cpfCnpj: string,
-  addressData?: {
-    addressZip: string;
-    addressStreet: string;
-    addressNumber: string;
-    addressComplement?: string;
-    addressNeighborhood: string;
+function getAddressFields(addressData?: CustomerAddress): Partial<AsaasCustomerUpdate> {
+  if (!addressData) return {};
+
+  return {
+    postalCode: addressData.addressZip.replace(/\D/g, ''),
+    address: addressData.addressStreet,
+    addressNumber: addressData.addressNumber,
+    province: addressData.addressNeighborhood,
+    ...(addressData.addressComplement ? { complement: addressData.addressComplement } : {}),
+  };
+}
+
+async function findCustomerByEmail(email: string, apiKey: string): Promise<AsaasCustomer | null> {
+  const response = await asaasFetch(`${ASAAS_API_URL}/customers?email=${encodeURIComponent(email)}`, {
+    headers: { access_token: apiKey },
+  });
+  if (!response.ok) return null;
+
+  const data = await response.json() as { data?: AsaasCustomer[] };
+  return data.data?.[0] ?? null;
+}
+
+async function updateAsaasCustomer(
+  customerId: string,
+  cleanPhone: string,
+  addressData: CustomerAddress | undefined,
+  apiKey: string,
+) {
+  const response = await asaasFetch(`${ASAAS_API_URL}/customers/${customerId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', access_token: apiKey },
+    body: JSON.stringify({
+      phone: cleanPhone,
+      mobilePhone: cleanPhone,
+      ...getAddressFields(addressData),
+    } satisfies AsaasCustomerUpdate),
+  });
+
+  if (!response.ok) {
+    console.error('Asaas customer update failed', { status: response.status });
   }
-): Promise<AsaasCustomer | null> {
-  const apiKey = process.env.ASAAS_API_KEY;
-  
-  if (!apiKey) {
-    console.error('ASAAS_API_KEY is missing from process.env');
-    throw new Error("ASAAS_API_KEY not configured. Please check your .env file and restart the server.");
-  }
-  
-  // Strip formatting from cpfCnpj and phone (remove dots, dashes, slashes, spaces, parens)
-  const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
-  const cleanPhone = phone.replace(/\D/g, '');
+}
 
-  // O código do país (55) foi removido pois o Asaas interpreta como DDD.
-
-
-  try {
-    // First, check if customer exists
-    const searchRes = await asaasFetch(`${ASAAS_API_URL}/customers?email=${encodeURIComponent(email)}`, {
-      headers: {
-        'access_token': apiKey,
-      }
-    });
-    
-    if (searchRes.ok) {
-      const searchData = await searchRes.json();
-      if (searchData.data && searchData.data.length > 0) {
-        const customerId = searchData.data[0].id;
-        const updateBody: AsaasCustomerUpdate = {
-          phone: cleanPhone,
-          mobilePhone: cleanPhone,
-        };
-        
-        // Update customer with the latest address to prevent manual input during checkout
-        if (addressData) {
-          updateBody.postalCode = addressData.addressZip.replace(/\D/g, '');
-          updateBody.address = addressData.addressStreet;
-          updateBody.addressNumber = addressData.addressNumber;
-          updateBody.province = addressData.addressNeighborhood;
-          if (addressData.addressComplement) updateBody.complement = addressData.addressComplement;
-        }
-        
-        const updateRes = await asaasFetch(`${ASAAS_API_URL}/customers/${customerId}`, {
-          method: 'POST', // Asaas uses POST /customers/{id} for updates
-          headers: {
-            'Content-Type': 'application/json',
-            'access_token': apiKey,
-          },
-          body: JSON.stringify(updateBody),
-        });
-
-        if (!updateRes.ok) {
-          console.error('Asaas customer update failed', { status: updateRes.status });
-          // We don't throw here to not block the checkout, but the phone won't update
-        }
-        
-        return { id: customerId };
-      }
-    }
-
-    // Create new customer
-    const requestBody: AsaasCustomerCreate = {
+async function createNewAsaasCustomer(
+  name: string,
+  email: string,
+  cleanPhone: string,
+  cleanCpfCnpj: string,
+  addressData: CustomerAddress | undefined,
+  apiKey: string,
+): Promise<AsaasCustomer> {
+  const response = await asaasFetch(`${ASAAS_API_URL}/customers`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', access_token: apiKey },
+    body: JSON.stringify({
       name,
       email,
       phone: cleanPhone,
       mobilePhone: cleanPhone,
       cpfCnpj: cleanCpfCnpj,
-    };
+      ...getAddressFields(addressData),
+    } satisfies AsaasCustomerCreate),
+  });
+  const data = await response.json() as AsaasCustomer;
 
-    if (addressData) {
-      requestBody.postalCode = addressData.addressZip.replace(/\D/g, '');
-      requestBody.address = addressData.addressStreet;
-      requestBody.addressNumber = addressData.addressNumber;
-      if (addressData.addressComplement) requestBody.complement = addressData.addressComplement;
-      requestBody.province = addressData.addressNeighborhood;
+  if (!response.ok) {
+    console.error('Asaas customer creation failed', { status: response.status });
+    throw new Error('Asaas Customer Error');
+  }
+
+  return { id: data.id };
+}
+
+export async function createAsaasCustomer(
+  name: string,
+  email: string,
+  phone: string,
+  cpfCnpj: string,
+  addressData?: CustomerAddress,
+): Promise<AsaasCustomer | null> {
+  const apiKey = process.env.ASAAS_API_KEY;
+  if (!apiKey) {
+    console.error('ASAAS_API_KEY is missing from process.env');
+    throw new Error("ASAAS_API_KEY not configured. Please check your .env file and restart the server.");
+  }
+
+  const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
+  const cleanPhone = phone.replace(/\D/g, '');
+
+  try {
+    const existingCustomer = await findCustomerByEmail(email, apiKey);
+    if (existingCustomer) {
+      await updateAsaasCustomer(existingCustomer.id, cleanPhone, addressData, apiKey);
+      return existingCustomer;
     }
 
-    const res = await asaasFetch(`${ASAAS_API_URL}/customers`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'access_token': apiKey,
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      console.error('Asaas customer creation failed', { status: res.status });
-      throw new Error('Asaas Customer Error');
-    }
-
-    return { id: data.id };
+    return await createNewAsaasCustomer(name, email, cleanPhone, cleanCpfCnpj, addressData, apiKey);
   } catch (error: unknown) {
     console.error('Asaas customer operation failed', { reason: errorName(error) });
     throw error;

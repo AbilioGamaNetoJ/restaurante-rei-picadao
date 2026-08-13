@@ -7,6 +7,22 @@ e este projeto adere a [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [0.2.3] - 2026-08-13
+
+### Qualidade de codigo
+
+Resolvidas as ocorrencias apontadas no relatorio do SonarQube, sem alterar o comportamento da aplicacao.
+
+- Adicionado `type="button"` a todos os botoes HTML nativos, evitando submits acidentais em formularios.
+- Corrigido o ternario redundante no layout do dashboard.
+- Ajustado o componente `Label` para renderizar `<label>` somente quando houver `htmlFor`; titulos sem controle associado usam `<span>`.
+- Reduzida a complexidade cognitiva das rotas de checkout e webhook Asaas, do cliente Asaas, do fluxo de status de pedidos e dos scripts de integracao, mantendo os mesmos contratos e regras de seguranca.
+- Substituidas buscas lineares por `Set`, chaves React baseadas em indice por identificadores estaveis e elementos com `role="button"` por botoes nativos acessiveis.
+- Padronizados imports `node:`, reexportacoes de icones, `String.raw` para regex e `await` de nivel superior nos scripts utilitarios.
+- Validado com ESLint (0 erros), TypeScript e suite Vitest (64/64 testes).
+
+---
+
 ## [0.2.2] - 2026-08-13
 
 ### Qualidade de codigo

@@ -7,9 +7,9 @@ import { eq, sql, and, gte, lte, inArray } from 'drizzle-orm';
 import { DashboardClient } from './dashboard-client';
 import { can, getRoleFromClaims } from '@/lib/permissions';
 
-export default async function DashboardPage(props: {
+export default async function DashboardPage(props: Readonly<{
   searchParams: Promise<{ month?: string }>;
-}) {
+}>) {
   const searchParams = await props.searchParams;
   const { sessionClaims } = await auth();
   const role = getRoleFromClaims(sessionClaims);

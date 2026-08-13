@@ -4,17 +4,17 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Label({ className, ...props }: Readonly<React.ComponentProps<"label">>) {
-  return (
-    <label
-      data-slot="label"
-      className={cn(
-        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
-        className
-      )}
-      {...props}
-    />
+function Label({ className, htmlFor, ...props }: Readonly<React.ComponentProps<"label">>) {
+  const labelClassName = cn(
+    "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+    className
   )
+
+  if (htmlFor !== undefined) {
+    return <label data-slot="label" htmlFor={htmlFor} className={labelClassName} {...props} />
+  }
+
+  return <span data-slot="label" className={labelClassName} {...props} />
 }
 
 export { Label }

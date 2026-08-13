@@ -26,15 +26,38 @@ const staffTransitions: Record<OrderStatus, readonly OrderStatus[]> = {
   cancelled: [],
 };
 
-const cancellableStatuses: readonly OrderStatus[] = [
+const cancellableStatuses: ReadonlySet<OrderStatus> = new Set([
   'pending',
   'paid',
   'preparing',
   'ready',
   'delivering',
-];
+]);
 
 export class OrderStatusError extends Error {}
+
+async function ensureCancellable(
+  currentOrder: { status: OrderStatus; paymentId: string | null },
+  canCancel: boolean,
+  orderId: string
+) {
+  if (!canCancel || !cancellableStatuses.has(currentOrder.status)) {
+    throw new OrderStatusError('Transição de status não permitida.');
+  }
+
+  if (!currentOrder.paymentId) return;
+
+  try {
+    if (currentOrder.status === 'pending') {
+      await deletePayment(currentOrder.paymentId);
+    } else {
+      await refundPayment(currentOrder.paymentId);
+    }
+  } catch {
+    console.error('Failed to cancel or refund payment for order', { orderId });
+    throw new OrderStatusError('Não foi possível cancelar o pagamento com segurança.');
+  }
+}
 
 export async function transitionStaffOrder(
   orderId: string,
@@ -49,22 +72,7 @@ export async function transitionStaffOrder(
   if (currentOrder.status === nextStatus) return currentOrder;
 
   if (nextStatus === 'cancelled') {
-    if (!canCancel || !cancellableStatuses.includes(currentOrder.status)) {
-      throw new OrderStatusError('Transição de status não permitida.');
-    }
-
-    if (currentOrder.paymentId) {
-      try {
-        if (currentOrder.status === 'pending') {
-          await deletePayment(currentOrder.paymentId);
-        } else {
-          await refundPayment(currentOrder.paymentId);
-        }
-      } catch {
-        console.error('Failed to cancel or refund payment for order', { orderId });
-        throw new OrderStatusError('Não foi possível cancelar o pagamento com segurança.');
-      }
-    }
+    await ensureCancellable(currentOrder, canCancel, orderId);
   } else if (!staffTransitions[currentOrder.status].includes(nextStatus)) {
     throw new OrderStatusError('Transição de status não permitida.');
   }

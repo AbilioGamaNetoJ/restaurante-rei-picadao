@@ -213,6 +213,7 @@ export function AdicionaisClient({ addons, categories }: Readonly<{ addons: Addo
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger nativeButton={true} render={
             <button 
+              type="button"
               onClick={handleOpenNew}
               className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
             >
@@ -285,22 +286,19 @@ export function AdicionaisClient({ addons, categories }: Readonly<{ addons: Addo
                         categories.map(cat => (
                           <div
                             key={cat.id}
-                            role="button"
-                            tabIndex={0}
-                            className={`group flex items-center justify-between px-2 py-1.5 rounded-md cursor-pointer transition-colors ${
+                            className={`group flex items-center justify-between px-2 py-1.5 rounded-md transition-colors ${
                               formData.categoryId === cat.id
                                 ? 'bg-primary text-primary-foreground'
                                 : 'hover:bg-slate-200 text-slate-700'
                             }`}
-                            onClick={() => setFormData({...formData, categoryId: cat.id})}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                setFormData({...formData, categoryId: cat.id});
-                              }
-                            }}
                           >
-                            <span className="text-xs font-medium">{cat.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => setFormData({...formData, categoryId: cat.id})}
+                              className="flex-1 text-left text-xs font-medium cursor-pointer"
+                            >
+                              {cat.name}
+                            </button>
                             <button
                               type="button"
                               onClick={(e) => {

@@ -216,6 +216,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: Readonly
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger nativeButton={true} render={
             <button 
+              type="button"
               onClick={handleOpenNew}
               className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
             >
@@ -390,11 +391,10 @@ export function ProdutosClient({ initialProducts, categories, addons }: Readonly
                 <Label className="text-base font-semibold">Adicionais Permitidos</Label>
 
                 {addons.length > 0 && (
-                  <div
-                    role="button"
-                    tabIndex={0}
+                  <button
+                    type="button"
                     className={cn(
-                      "flex items-center gap-4 p-3 rounded-xl border transition-all duration-200 group cursor-pointer w-full",
+                      "flex items-center gap-4 p-3 rounded-xl border transition-all duration-200 group cursor-pointer w-full text-left",
                       formData.addonsIds.length === addons.length
                         ? "bg-primary/[0.04] border-primary shadow-sm ring-1 ring-primary/10"
                         : "bg-white dark:bg-slate-800 border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md"
@@ -405,16 +405,6 @@ export function ProdutosClient({ initialProducts, categories, addons }: Readonly
                         ...prev,
                         addonsIds: allSelected ? [] : addons.map(a => a.id)
                       }));
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        const allSelected = formData.addonsIds.length === addons.length;
-                        setFormData(prev => ({
-                          ...prev,
-                          addonsIds: allSelected ? [] : addons.map(a => a.id)
-                        }));
-                      }
                     }}
                   >
                     <div className="flex items-center flex-shrink-0 pl-1">
@@ -430,7 +420,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: Readonly
                         {formData.addonsIds.length === addons.length ? "Desmarcar Todos" : "Selecionar Todos"}
                       </div>
                     </div>
-                  </div>
+                  </button>
                 )}
                 
                 <div className="space-y-4">
@@ -447,23 +437,16 @@ export function ProdutosClient({ initialProducts, categories, addons }: Readonly
                         </h4>
                         <div className="grid grid-cols-1 gap-3">
                           {filteredAddons.map((addon) => (
-                            <div
+                            <button
                               key={addon.id}
-                              role="button"
-                              tabIndex={0}
+                              type="button"
                               className={cn(
-                                "flex items-center gap-4 p-3 rounded-xl border transition-all duration-200 group cursor-pointer w-full relative",
+                                "flex items-center gap-4 p-3 rounded-xl border transition-all duration-200 group cursor-pointer w-full relative text-left",
                                 formData.addonsIds.includes(addon.id)
                                   ? "bg-primary/[0.04] border-primary shadow-sm ring-1 ring-primary/10"
                                   : "bg-white dark:bg-slate-800 border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md"
                               )}
                               onClick={() => toggleAddon(addon.id)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  toggleAddon(addon.id);
-                                }
-                              }}
                             >
                               <div className="flex items-center flex-shrink-0 pl-1">
                                 <input 
@@ -500,7 +483,7 @@ export function ProdutosClient({ initialProducts, categories, addons }: Readonly
                                   )}
                                 </div>
                               </div>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </div>

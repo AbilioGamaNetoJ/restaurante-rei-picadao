@@ -7,7 +7,7 @@ import { auth } from "@clerk/nextjs/server";
 import { can } from "@/lib/permissions";
 import { LayoutDashboard } from "lucide-react";
 
-export default async function StoreLayout({ children }: { children: ReactNode }) {
+export default async function StoreLayout({ children }: Readonly<{ children: ReactNode }>) {
   const settings = await db.query.storeSettings.findFirst();
   const storeName = settings?.name || "Rei do Picadão";
   const logoUrl = settings?.logoUrl;

@@ -124,6 +124,7 @@ export function DashboardLayoutClient({
         
         {/* Toggle Collapse Button */}
         <button
+          type="button"
           onClick={() => {
             const newVal = !isCollapsed;
             setIsCollapsed(newVal);
@@ -142,6 +143,7 @@ export function DashboardLayoutClient({
           <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
             <SheetTrigger nativeButton={true} render={
               <button
+                type="button"
                 className="shrink-0 md:hidden inline-flex items-center justify-center rounded-md border border-slate-200 bg-white h-9 w-9 text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
               >
                 <Menu className="h-5 w-5" />
@@ -151,7 +153,7 @@ export function DashboardLayoutClient({
             <SheetContent side="left" className="flex flex-col p-0 w-72 border-r-0" showCloseButton={false}>
               <div className="absolute right-4 top-4 z-50">
                 <SheetClose nativeButton={true} render={
-                  <button className="rounded-md p-2 bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors">
+                  <button type="button" className="rounded-md p-2 bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors">
                     <X className="h-4 w-4" />
                     <span className="sr-only">Fechar</span>
                   </button>
@@ -174,6 +176,7 @@ export function DashboardLayoutClient({
         {/* Floating Side Button for Mobile Navigation (Botão Lateral) */}
         <div className="md:hidden fixed left-0 top-1/2 -translate-y-1/2 z-40">
           <button
+            type="button"
             onClick={() => setIsMobileOpen(true)}
             className="flex items-center justify-center h-12 w-8 bg-blue-600 text-white rounded-r-xl shadow-lg hover:bg-blue-700 transition-all active:scale-95 border border-l-0 border-blue-500"
             aria-label="Abrir menu de navegação"
@@ -218,7 +221,7 @@ function SidebarContent({
               height={32}
               className={cn(
                 "object-cover rounded-md border border-slate-100 bg-white shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:shadow-md",
-                isCollapsed ? "h-8 w-8" : "h-8 w-8"
+                "h-8 w-8"
               )} 
             />
           ) : (

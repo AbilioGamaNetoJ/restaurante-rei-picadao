@@ -64,6 +64,7 @@ export function PushPermission() {
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-600" />
 
           <button
+            type="button"
             onClick={handleDismiss}
             className="absolute top-3 right-3 p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
             aria-label="Fechar"
@@ -87,12 +88,14 @@ export function PushPermission() {
 
           <div className="flex gap-3 mt-4">
             <button
+              type="button"
               onClick={handleDismiss}
               className="flex-1 py-2 px-3 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-colors"
             >
               Depois
             </button>
             <button
+              type="button"
               onClick={handleSubscribe}
               disabled={isSubscribing}
               className="flex-1 py-2 px-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"

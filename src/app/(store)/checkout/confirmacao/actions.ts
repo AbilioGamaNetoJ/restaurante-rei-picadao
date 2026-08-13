@@ -18,7 +18,7 @@ export async function confirmOrderDelivery(orderId: string, trackingToken: strin
 
   try {
     const order = await getTrackableOrder(input.data.orderId, input.data.trackingToken);
-    if (!order || order.status !== 'delivering') return { success: false };
+    if (order?.status !== 'delivering') return { success: false };
 
     const [updatedOrder] = await db
       .update(orders)

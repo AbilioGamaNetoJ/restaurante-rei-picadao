@@ -1,4 +1,4 @@
-import { createHash, randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 
 const TRACKING_TOKEN_BYTES = 32;
 

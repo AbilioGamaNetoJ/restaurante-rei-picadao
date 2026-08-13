@@ -119,17 +119,20 @@ function ConfirmacaoContent() {
   const currentStep = statusConfig[status]?.step || 0;
   const isCancelled = status === 'cancelled';
 
+  let statusIcon: React.ReactNode;
+  if (isCancelled) {
+    statusIcon = <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />;
+  } else if (currentStep === 6) {
+    statusIcon = <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />;
+  } else {
+    statusIcon = <Clock className="w-16 h-16 text-primary mx-auto mb-4 animate-pulse" />;
+  }
+
   return (
     <div className="container max-w-2xl mx-auto py-10 px-4">
       <div className="text-center mb-10">
-        {isCancelled ? (
-          <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-        ) : currentStep === 6 ? (
-          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-        ) : (
-          <Clock className="w-16 h-16 text-primary mx-auto mb-4 animate-pulse" />
-        )}
-        
+        {statusIcon}
+
         <h1 className="text-3xl font-bold mb-2">
           {isCancelled ? 'Pedido Cancelado' : 'Acompanhe seu Pedido'}
         </h1>

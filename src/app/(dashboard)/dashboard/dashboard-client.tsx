@@ -335,7 +335,7 @@ export function DashboardClient({
                     stroke="none"
                   >
                     {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="hover:opacity-80 transition-opacity duration-200 outline-none" />
+                      <Cell key={entry.name} fill={COLORS[index % COLORS.length]} className="hover:opacity-80 transition-opacity duration-200 outline-none" />
                     ))}
                   </Pie>
                   <Tooltip

@@ -1,7 +1,7 @@
 import sharp from 'sharp';
-import { mkdirSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { mkdirSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
@@ -69,4 +69,8 @@ async function generate() {
   console.log('\n🎉 All icons generated in public/icons/');
 }
 
-generate().catch(console.error);
+try {
+  await generate();
+} catch (error) {
+  console.error(error);
+}

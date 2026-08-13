@@ -75,7 +75,6 @@ self.addEventListener('fetch', (event) => {
         return caches.match(OFFLINE_URL);
       })
     );
-    return;
   }
 });
 

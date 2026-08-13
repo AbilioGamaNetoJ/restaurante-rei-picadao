@@ -7,15 +7,9 @@ import { eq } from 'drizzle-orm';
 const API_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001/api';
 const TEST_ORDER_ID = '12345678-1234-1234-1234-123456789012';
 
-async function testIntegrations() {
-  console.log('🧪 Iniciando Testes de Integração (Fase 8)...\n');
-
-  // 0. Preparação: Garantir que o pedido de teste existe
-  console.log('🗄️ Preparando banco de dados...');
+async function prepareTestOrder() {
   try {
-    // Limpar primeiro para garantir consistência
     await db.delete(orders).where(eq(orders.id, TEST_ORDER_ID));
-    
     const existing = await db.query.orders.findFirst({
       where: eq(orders.id, TEST_ORDER_ID)
     });
@@ -45,8 +39,9 @@ async function testIntegrations() {
   } catch (err) {
     console.error('❌ Erro ao preparar banco:', err instanceof Error ? err.message : String(err));
   }
+}
 
-  // 1. Teste de Frete (Google Maps)
+async function testShipping() {
   console.log('\n📡 Testando Cálculo de Frete...');
   try {
     const res = await fetch(`${API_URL}/frete`, {
@@ -69,8 +64,9 @@ async function testIntegrations() {
   } catch (err) {
     console.error('❌ Frete: Erro na requisição', err instanceof Error ? err.message : String(err));
   }
+}
 
-  // 2. Teste de Webhook Asaas (Simulação)
+async function testAsaasWebhook() {
   console.log('\n💳 Testando Webhook Asaas (Simulação de Pagamento)...');
   try {
     const res = await fetch(`${API_URL}/webhooks/asaas`, {
@@ -97,14 +93,12 @@ async function testIntegrations() {
       const results = await db.select().from(orders).where(eq(orders.id, TEST_ORDER_ID));
       const updatedOrder = results[0];
       
-      if (updatedOrder) {
-        if (updatedOrder.status === 'paid') {
-          console.log('✅ Banco de Dados: Status do pedido atualizado para "paid"');
-        } else {
-          console.log('❌ Banco de Dados: Status do pedido não foi atualizado para "paid"');
-        }
-      } else {
+      if (!updatedOrder) {
         console.log('❌ Banco de Dados: Pedido NÃO encontrado após o webhook');
+      } else if (updatedOrder.status === 'paid') {
+        console.log('✅ Banco de Dados: Status do pedido atualizado para "paid"');
+      } else {
+        console.log('❌ Banco de Dados: Status do pedido não foi atualizado para "paid"');
       }
     } else {
       console.log(`❌ Webhook Asaas: Falhou (status ${res.status})`);
@@ -112,8 +106,9 @@ async function testIntegrations() {
   } catch (err) {
     console.error('❌ Webhook Asaas: Erro na requisição', err instanceof Error ? err.message : String(err));
   }
+}
 
-  // 3. Teste de Webhook Clerk (Simulação de Usuário)
+async function testClerkWebhook() {
   console.log('\n👤 Testando Webhook Clerk (Simulação de Atualização de Usuário)...');
   try {
     const res = await fetch(`${API_URL}/webhooks/clerk`, {
@@ -141,8 +136,16 @@ async function testIntegrations() {
   } catch (err) {
     console.error('❌ Webhook Clerk: Erro na requisição', err instanceof Error ? err.message : String(err));
   }
+}
 
+async function testIntegrations() {
+  console.log('🧪 Iniciando Testes de Integração (Fase 8)...\n');
+  console.log('🗄️ Preparando banco de dados...');
+  await prepareTestOrder();
+  await testShipping();
+  await testAsaasWebhook();
+  await testClerkWebhook();
   console.log('\n🏁 Fim dos testes de integração.');
 }
 
-testIntegrations();
+void testIntegrations();
