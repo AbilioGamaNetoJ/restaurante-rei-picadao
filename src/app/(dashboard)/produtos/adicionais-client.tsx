@@ -72,7 +72,7 @@ const sanitizeAndFormatPrice = (value: string) => {
   return clean;
 };
 
-export function AdicionaisClient({ addons, categories }: { addons: Addon[], categories: Category[] }) {
+export function AdicionaisClient({ addons, categories }: Readonly<{ addons: Addon[], categories: Category[] }>) {
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -283,14 +283,22 @@ export function AdicionaisClient({ addons, categories }: { addons: Addon[], cate
                         <div className="text-[10px] text-muted-foreground p-2 text-center italic">Nenhuma categoria</div>
                       ) : (
                         categories.map(cat => (
-                          <div 
-                            key={cat.id} 
+                          <div
+                            key={cat.id}
+                            role="button"
+                            tabIndex={0}
                             className={`group flex items-center justify-between px-2 py-1.5 rounded-md cursor-pointer transition-colors ${
-                              formData.categoryId === cat.id 
-                                ? 'bg-primary text-primary-foreground' 
+                              formData.categoryId === cat.id
+                                ? 'bg-primary text-primary-foreground'
                                 : 'hover:bg-slate-200 text-slate-700'
                             }`}
                             onClick={() => setFormData({...formData, categoryId: cat.id})}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setFormData({...formData, categoryId: cat.id});
+                              }
+                            }}
                           >
                             <span className="text-xs font-medium">{cat.name}</span>
                             <button

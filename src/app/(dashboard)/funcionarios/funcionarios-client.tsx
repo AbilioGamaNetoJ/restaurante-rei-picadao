@@ -79,7 +79,7 @@ const formatSalary = (salary: string | null | undefined) => {
 
 type FilterType = 'all' | 'active' | 'inactive';
 
-export function FuncionariosClient({ users, currentRole }: { users: EmployeeUser[], currentRole: string }) {
+export function FuncionariosClient({ users, currentRole }: Readonly<{ users: EmployeeUser[], currentRole: string }>) {
   const [isPending, startTransition] = useTransition();
   const [filter, setFilter] = useState<FilterType>('all');
   const [editDialog, setEditDialog] = useState<{ open: boolean; user: EmployeeUser | null }>({ open: false, user: null });

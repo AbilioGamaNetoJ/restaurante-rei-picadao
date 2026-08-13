@@ -86,12 +86,12 @@ export function DashboardLayoutClient({
   role,
   logoUrl,
   storeName,
-}: {
+}: Readonly<{
   children: React.ReactNode;
   role: string;
   logoUrl?: string | null;
   storeName: string;
-}) {
+}>) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -196,13 +196,13 @@ function SidebarContent({
   storeName, 
   isCollapsed,
   pathname
-}: { 
-  allowedItems: MenuItem[], 
-  logoUrl?: string | null, 
-  storeName: string, 
+}: Readonly<{
+  allowedItems: MenuItem[],
+  logoUrl?: string | null,
+  storeName: string,
   isCollapsed: boolean,
   pathname: string
-}) {
+}>) {
   return (
     <div className="flex h-full flex-col bg-white overflow-hidden">
       <div className={cn(

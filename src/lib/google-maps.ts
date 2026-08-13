@@ -96,7 +96,7 @@ export async function calculateDistance(
     }
 
     // Convert duration "1234s" to minutes
-    const durationSeconds = parseInt(route.duration.replace("s", ""), 10);
+    const durationSeconds = Number.parseInt(route.duration.replace("s", ""), 10);
     const durationMin = Math.round(durationSeconds / 60);
     
     // Convert distanceMeters to km

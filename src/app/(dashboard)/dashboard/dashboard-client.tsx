@@ -72,7 +72,7 @@ export function DashboardClient({
   monthlyData,
   expensesByCategory,
   currentMonth,
-}: {
+}: Readonly<{
   monthRevenue: number;
   monthExpenses: number;
   operatingBalance: number;
@@ -82,7 +82,7 @@ export function DashboardClient({
   monthlyData: MonthlyDataEntry[];
   expensesByCategory: ExpensesByCategoryEntry[];
   currentMonth: Date;
-}) {
+}>) {
   const router = useRouter();
   const searchParams = useSearchParams();
 

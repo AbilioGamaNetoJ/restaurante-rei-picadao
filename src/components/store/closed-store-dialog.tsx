@@ -39,7 +39,7 @@ function groupHoursByDay(hours: StoreHour[]) {
   return grouped;
 }
 
-export function ClosedStoreDialog({ isOpenStatus, hours = [] }: ClosedStoreDialogProps) {
+export function ClosedStoreDialog({ isOpenStatus, hours = [] }: Readonly<ClosedStoreDialogProps>) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {

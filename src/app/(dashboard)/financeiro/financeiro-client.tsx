@@ -58,7 +58,7 @@ type Expense = {
   createdAt: Date;
 };
 
-export function FinanceiroClient({ initialExpenses }: { initialExpenses: Expense[] }) {
+export function FinanceiroClient({ initialExpenses }: Readonly<{ initialExpenses: Expense[] }>) {
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

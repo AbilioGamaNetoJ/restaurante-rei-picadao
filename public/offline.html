@@ -105,14 +105,22 @@
 </head>
 <body>
   <div class="container">
-    <img src="/icons/icon-192x192.png" alt="Rei do Picadão" class="logo" onerror="this.style.display='none'">
+    <img id="logo" src="/icons/icon-192x192.png" alt="Rei do Picadão" class="logo">
     <div class="icon-offline">📡</div>
     <h1>Sem conexão</h1>
     <p>Parece que você está offline. Verifique sua conexão com a internet e tente novamente.</p>
-    <button class="btn-retry" onclick="window.location.reload()">
+    <button id="retry-btn" class="btn-retry" type="button">
       🔄 Tentar novamente
     </button>
     <div class="footer">Rei do Picadão</div>
   </div>
+  <script>
+    document.getElementById('logo').addEventListener('error', function () {
+      this.style.display = 'none';
+    });
+    document.getElementById('retry-btn').addEventListener('click', function () {
+      window.location.reload();
+    });
+  </script>
 </body>
 </html>

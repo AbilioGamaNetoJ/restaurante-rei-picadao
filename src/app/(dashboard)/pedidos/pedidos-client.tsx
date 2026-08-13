@@ -66,7 +66,7 @@ const tabs: { value: string; label: string; statuses: OrderStatus[] }[] = [
 
 const REFRESH_INTERVAL_MS = 15000;
 
-export function PedidosClient({ initialOrders }: { initialOrders: DashboardOrder[] }) {
+export function PedidosClient({ initialOrders }: Readonly<{ initialOrders: DashboardOrder[] }>) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('active');
   const [selectedDate, setSelectedDate] = useState(new Date());

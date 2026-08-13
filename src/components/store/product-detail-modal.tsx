@@ -40,7 +40,7 @@ interface ProductDetailModalProps {
   onClose: () => void;
 }
 
-export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailModalProps) {
+export function ProductDetailModal({ product, isOpen, onClose }: Readonly<ProductDetailModalProps>) {
   const [quantity, setQuantity] = useState(1);
   const [comment, setComment] = useState('');
   const [selectedAddons, setSelectedAddons] = useState<{ [addonId: string]: number }>({});
@@ -123,7 +123,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
     const addonsToCart = product.addons
       ?.filter(a => selectedAddons[a.addon.id])
       .map(a => {
-        const price = parseFloat(a.addon.price);
+        const price = Number.parseFloat(a.addon.price);
         return {
           id: a.addon.id,
           name: a.addon.name,
@@ -137,12 +137,12 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
       id: crypto.randomUUID(),
       productId: product.id,
       name: product.name,
-      price: parseFloat(product.price),
+      price: Number.parseFloat(product.price),
       imageUrl: product.imageUrl,
       quantity,
       comment,
       addons: addonsToCart,
-      subtotal: parseFloat(product.price) * quantity + addonsToCart.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0),
+      subtotal: Number.parseFloat(product.price) * quantity + addonsToCart.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0),
     });
 
     useCartStore.getState().setDrawerOpen(true);
@@ -181,10 +181,10 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
     return acc;
   }, 0) || 0;
 
-  const productPrice = parseFloat(product.price);
+  const productPrice = Number.parseFloat(product.price);
   const addonsTotal = product.addons?.reduce((acc, a) => {
     const q = selectedAddons[a.addon.id] || 0;
-    const price = parseFloat(a.addon.price);
+    const price = Number.parseFloat(a.addon.price);
     return acc + (price * q);
   }, 0) || 0;
 
@@ -219,7 +219,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
             <div className="font-bold text-2xl text-primary">R$ {productPrice.toFixed(2)}</div>
             {product.originalPrice && (
               <div className="text-base text-muted-foreground line-through">
-                R$ {parseFloat(product.originalPrice).toFixed(2)}
+                R$ {Number.parseFloat(product.originalPrice).toFixed(2)}
               </div>
             )}
           </div>
@@ -258,7 +258,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                           )}
                           <div>
                             <p className="text-sm font-medium">{item.addon.name}</p>
-                            <p className="text-xs text-gray-500">+ R$ {parseFloat(item.addon.price).toFixed(2)}</p>
+                            <p className="text-xs text-gray-500">+ R$ {Number.parseFloat(item.addon.price).toFixed(2)}</p>
                           </div>
                         </div>
                         

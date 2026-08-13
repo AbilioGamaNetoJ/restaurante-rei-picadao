@@ -1,6 +1,6 @@
 import { ShoppingCart, Clock, Info, Star, Bike, Store } from "lucide-react";
 
-export function StoreIcon({ className }: { className?: string }) {
+export function StoreIcon({ className }: Readonly<{ className?: string }>) {
   return (
     <svg 
       xmlns="http://www.w3.org/2000/svg" 

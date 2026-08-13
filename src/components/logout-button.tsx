@@ -7,7 +7,7 @@ import { LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-export function LogoutButton({ isCollapsed }: { isCollapsed?: boolean }) {
+export function LogoutButton({ isCollapsed }: Readonly<{ isCollapsed?: boolean }>) {
   const { signOut } = useClerk();
 
   return (

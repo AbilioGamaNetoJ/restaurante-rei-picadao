@@ -26,7 +26,7 @@ export function InstallPrompt() {
     if (standalone) return;
 
     // Check dismiss count
-    const dismissCount = parseInt(localStorage.getItem(DISMISS_KEY) || '0', 10);
+    const dismissCount = Number.parseInt(localStorage.getItem(DISMISS_KEY) || '0', 10);
     if (dismissCount >= MAX_DISMISSES) return;
 
     const handler = (e: Event) => {
@@ -58,7 +58,7 @@ export function InstallPrompt() {
   };
 
   const handleDismiss = () => {
-    const current = parseInt(localStorage.getItem(DISMISS_KEY) || '0', 10);
+    const current = Number.parseInt(localStorage.getItem(DISMISS_KEY) || '0', 10);
     localStorage.setItem(DISMISS_KEY, String(current + 1));
     setIsVisible(false);
   };

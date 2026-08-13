@@ -18,7 +18,7 @@ type Category = {
   isActive: boolean;
 };
 
-export function CategoriasClient({ initialCategories }: { initialCategories: Category[] }) {
+export function CategoriasClient({ initialCategories }: Readonly<{ initialCategories: Category[] }>) {
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

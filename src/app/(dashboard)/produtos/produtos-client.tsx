@@ -92,7 +92,7 @@ const sanitizeAndFormatPrice = (value: string) => {
   return clean;
 };
 
-export function ProdutosClient({ initialProducts, categories, addons }: { initialProducts: Product[], categories: Category[], addons: Addon[] }) {
+export function ProdutosClient({ initialProducts, categories, addons }: Readonly<{ initialProducts: Product[], categories: Category[], addons: Addon[] }>) {
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -391,6 +391,8 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
 
                 {addons.length > 0 && (
                   <div
+                    role="button"
+                    tabIndex={0}
                     className={cn(
                       "flex items-center gap-4 p-3 rounded-xl border transition-all duration-200 group cursor-pointer w-full",
                       formData.addonsIds.length === addons.length
@@ -403,6 +405,16 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                         ...prev,
                         addonsIds: allSelected ? [] : addons.map(a => a.id)
                       }));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        const allSelected = formData.addonsIds.length === addons.length;
+                        setFormData(prev => ({
+                          ...prev,
+                          addonsIds: allSelected ? [] : addons.map(a => a.id)
+                        }));
+                      }
                     }}
                   >
                     <div className="flex items-center flex-shrink-0 pl-1">
@@ -435,8 +447,10 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                         </h4>
                         <div className="grid grid-cols-1 gap-3">
                           {filteredAddons.map((addon) => (
-                            <div 
-                              key={addon.id} 
+                            <div
+                              key={addon.id}
+                              role="button"
+                              tabIndex={0}
                               className={cn(
                                 "flex items-center gap-4 p-3 rounded-xl border transition-all duration-200 group cursor-pointer w-full relative",
                                 formData.addonsIds.includes(addon.id)
@@ -444,6 +458,12 @@ export function ProdutosClient({ initialProducts, categories, addons }: { initia
                                   : "bg-white dark:bg-slate-800 border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md"
                               )}
                               onClick={() => toggleAddon(addon.id)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  toggleAddon(addon.id);
+                                }
+                              }}
                             >
                               <div className="flex items-center flex-shrink-0 pl-1">
                                 <input 

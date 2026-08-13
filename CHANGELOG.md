@@ -7,6 +7,20 @@ e este projeto adere a [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [0.2.2] - 2026-08-13
+
+### Qualidade de codigo
+
+Resolvidas as issues reportadas pelo SonarCloud (accessibility, consistency e maintainability), sem alterar comportamento.
+
+- **Acessibilidade (jsx-a11y)**: elementos `<div>` clicaveis sem suporte a teclado corrigidos com `role="button"`, `tabIndex={0}` e `onKeyDown` (Enter/Espaco) em `storefront-client.tsx` (card de produto), `adicionais-client.tsx` (selecao de categoria) e `produtos-client.tsx` (selecionar todos os adicionais / item de adicional).
+- **`public/offline.html`**: listeners inline (`onerror`, `onclick`) substituidos por `addEventListener` em script separado; botao de retry migrado para `<button type="button">` nativo.
+- **Consistencia (ES2015+)**: `String.fromCharCode` -> `String.fromCodePoint` (`uploadthing/core.ts`); `String#charCodeAt` -> `String#codePointAt` (`push-permission.tsx`); `parseFloat`/`parseInt` globais -> `Number.parseFloat`/`Number.parseInt` em `product-detail-modal.tsx`, `configuracoes-client.tsx`, `storefront-client.tsx`, `install-prompt.tsx` e `google-maps.ts`.
+- **Readonly props**: props de componentes React marcadas como `Readonly<>` em ~35 componentes — todos os `*-client.tsx` do dashboard e storefront, componentes de `src/components/` (`logout-button`, `cart-drawer`, `product-detail-modal`, `closed-store-dialog`, `store-icons`) e os primitivos shadcn/ui (`badge`, `card`, `dialog`, `input`, `label`, `scroll-area`, `separator`, `sheet`, `sonner`, `table`, `tabs`).
+- Validado com `tsc --noEmit`, `eslint` (0 erros), suite Vitest (64/64) e `next build` de producao.
+
+---
+
 ## [0.2.1] - 2026-08-13
 
 ### Qualidade de codigo

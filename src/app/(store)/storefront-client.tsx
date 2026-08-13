@@ -61,7 +61,7 @@ interface StorefrontClientProps {
   settings: StoreSettings | undefined;
 }
 
-export function StorefrontClient({ categories, products, hours, settings }: StorefrontClientProps) {
+export function StorefrontClient({ categories, products, hours, settings }: Readonly<StorefrontClientProps>) {
   const [mounted, setMounted] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -244,7 +244,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
           <div className="pt-4 flex items-center justify-center md:justify-start">
             <div className="bg-gray-100/50 px-5 py-2.5 rounded-2xl flex items-center gap-3 border border-gray-200/50">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Pedido Mínimo</span>
-              <span className="text-lg font-semibold text-gray-900">R$ {parseFloat(settings?.minOrder || "0").toFixed(2)}</span>
+              <span className="text-lg font-semibold text-gray-900">R$ {Number.parseFloat(settings?.minOrder || "0").toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -475,7 +475,7 @@ export function StorefrontClient({ categories, products, hours, settings }: Stor
   );
 }
 
-function StoreStatusBadge({ isStoreOpen }: { hours: StoreHour[], isStoreOpen: () => boolean }) {
+function StoreStatusBadge({ isStoreOpen }: Readonly<{ hours: StoreHour[], isStoreOpen: () => boolean }>) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -502,11 +502,19 @@ function StoreStatusBadge({ isStoreOpen }: { hours: StoreHour[], isStoreOpen: ()
   );
 }
 
-function ProductCard({ product, onClick }: { product: ProductSummary, onClick: () => void }) {
+function ProductCard({ product, onClick }: Readonly<{ product: ProductSummary, onClick: () => void }>) {
   return (
-    <div 
+    <div
+      role="button"
+      tabIndex={0}
       className="bg-white rounded-[1.5rem] md:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:border-red-100 transition-all duration-500 cursor-pointer flex flex-row md:flex-col group h-full ring-1 ring-black/[0.02]"
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
     >
       <div className="p-3 md:p-4 shrink-0">
         <div className="relative w-[110px] h-[110px] md:w-full md:h-auto md:aspect-[4/3] overflow-hidden bg-gray-50 rounded-xl md:rounded-2xl">
@@ -556,11 +564,11 @@ function ProductCard({ product, onClick }: { product: ProductSummary, onClick: (
 
         <div className="flex items-center gap-1.5 md:gap-3 mt-auto pt-3 md:pt-4">
           <div className="font-semibold text-gray-900 text-base md:text-xl">
-            R$ {parseFloat(product.price).toFixed(2)}
+            R$ {Number.parseFloat(product.price).toFixed(2)}
           </div>
           {product.originalPrice && (
             <div className="text-xs text-gray-300 line-through font-medium">
-              R$ {parseFloat(product.originalPrice).toFixed(2)}
+              R$ {Number.parseFloat(product.originalPrice).toFixed(2)}
             </div>
           )}
         </div>

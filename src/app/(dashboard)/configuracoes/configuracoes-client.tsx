@@ -36,10 +36,10 @@ type StoreHour = {
 export function ConfiguracoesClient({
   initialSettings,
   initialHours
-}: {
+}: Readonly<{
   initialSettings: StoreSettings | null;
   initialHours: StoreHour[];
-}) {
+}>) {
   const [isPending, startTransition] = useTransition();
 
   const [settings, setSettings] = useState({
@@ -471,7 +471,7 @@ export function ConfiguracoesClient({
                           <Bike className="h-3.5 w-3.5 text-purple-500" />
                         </div>
                         <span className="text-gray-900 font-bold truncate">
-                          Taxa: R$ {parseFloat(settings.deliveryFeeKm || "0").toFixed(2)}/km
+                          Taxa: R$ {Number.parseFloat(settings.deliveryFeeKm || "0").toFixed(2)}/km
                         </span>
                       </div>
                     </div>
@@ -486,7 +486,7 @@ export function ConfiguracoesClient({
                     <div className="pt-2 flex items-center justify-center sm:justify-start">
                       <div className="bg-gray-100/50 px-4 py-2 rounded-xl flex items-center gap-2 border border-gray-200/50">
                         <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Pedido Mínimo</span>
-                        <span className="text-base font-black text-gray-900">R$ {parseFloat(settings.minOrder || "0").toFixed(2)}</span>
+                        <span className="text-base font-black text-gray-900">R$ {Number.parseFloat(settings.minOrder || "0").toFixed(2)}</span>
                       </div>
                     </div>
                   </div>

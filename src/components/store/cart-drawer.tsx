@@ -17,7 +17,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 
 
-export function CartDrawer({ trigger }: { trigger?: React.ReactElement }) {
+export function CartDrawer({ trigger }: Readonly<{ trigger?: React.ReactElement }>) {
   const [mounted, setMounted] = useState(false);
   const { items, removeItem, updateQuantity, getTotal, isDrawerOpen, setDrawerOpen } = useCartStore();
 
