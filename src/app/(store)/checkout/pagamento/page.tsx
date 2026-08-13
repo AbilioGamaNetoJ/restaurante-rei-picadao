@@ -10,14 +10,15 @@ import { CreditCard, QrCode } from 'lucide-react';
 
 export default function PagamentoPage() {
   const router = useRouter();
-  const { items, checkoutData, getTotal, clearCart } = useCartStore();
+  const { items, checkoutData, getTotal } = useCartStore();
   const [loading, setLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [mounted, setMounted] = React.useState(false);
   const [billingType, setBillingType] = useState<'PIX' | 'CREDIT_CARD'>('PIX');
 
   React.useEffect(() => {
-    setMounted(true);
+    const mountTimer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(mountTimer);
   }, []);
 
   React.useEffect(() => {
@@ -56,11 +57,17 @@ export default function PagamentoPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items,
+          items: items.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            comment: item.comment,
+            addons: item.addons.map((addon) => ({
+              id: addon.id,
+              quantity: addon.quantity,
+            })),
+          })),
           checkoutData,
-          subtotal,
-          deliveryFee,
-          total,
+          deliveryQuoteId: checkoutData.deliveryQuoteId,
           billingType,
         }),
       });
@@ -77,9 +84,13 @@ export default function PagamentoPage() {
       if (data.checkoutUrl) {
         setRedirecting(true);
         // NOTA: Não limpamos o carrinho aqui. Ele será limpo na página de confirmação.
-        if (billingType === 'PIX' && data.orderId) {
+        if (billingType === 'PIX' && data.orderId && data.trackingToken) {
           // Para PIX, o cliente não sai da loja. Vai direto para o acompanhamento
-          router.push(`/checkout/confirmacao?orderId=${data.orderId}`);
+          const params = new URLSearchParams({
+            orderId: data.orderId,
+            token: data.trackingToken,
+          });
+          router.push(`/checkout/confirmacao?${params.toString()}`);
         } else {
           // Para cartão de crédito, precisa ir para o Asaas inserir os dados
           window.location.href = data.checkoutUrl;

@@ -3,6 +3,8 @@ import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { products, productAddons, productCategories } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { publicProductColumns, toPublicProduct } from '@/lib/public-catalog';
+import { can, getRoleFromClaims } from '@/lib/permissions';
 
 export async function GET(
   req: Request,
@@ -13,15 +15,17 @@ export async function GET(
     
     const product = await db.query.products.findFirst({
       where: eq(products.id, id),
+      columns: publicProductColumns,
       with: {
         categories: {
-          with: {
-            category: true
-          }
+          columns: { categoryId: true },
         },
         addons: {
           with: {
-            addon: true
+            addon: {
+              columns: { id: true, name: true, price: true, imageUrl: true },
+              with: { category: { columns: { id: true, name: true } } },
+            }
           }
         }
       },
@@ -31,7 +35,7 @@ export async function GET(
       return NextResponse.json({ error: 'Produto não encontrado.' }, { status: 404 });
     }
 
-    return NextResponse.json(product);
+    return NextResponse.json(toPublicProduct(product));
   } catch (error) {
     console.error('Error fetching product:', error);
     return NextResponse.json(
@@ -48,13 +52,9 @@ export async function PUT(
   try {
     const { userId, sessionClaims } = await auth();
     const { id } = await params;
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
-    }
+    const role = getRoleFromClaims(sessionClaims);
 
-    const role = (sessionClaims?.metadata as any)?.role;
-    if (role !== 'dono' && role !== 'gerente') {
+    if (!userId || !can(role, 'manage_products')) {
       return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
     }
 
@@ -144,13 +144,9 @@ export async function DELETE(
   try {
     const { userId, sessionClaims } = await auth();
     const { id } = await params;
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
-    }
+    const role = getRoleFromClaims(sessionClaims);
 
-    const role = (sessionClaims?.metadata as any)?.role;
-    if (role !== 'dono' && role !== 'gerente') {
+    if (!userId || !can(role, 'manage_products')) {
       return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
     }
 

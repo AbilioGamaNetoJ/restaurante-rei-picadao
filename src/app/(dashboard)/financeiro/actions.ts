@@ -5,12 +5,13 @@ import { db } from '@/db';
 import { expenses } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { can, getRoleFromClaims } from '@/lib/permissions';
 
 export async function createExpense(data: { description: string; amount: string; category: string }) {
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
-  
-  if (!userId || role !== 'dono') {
+  const role = getRoleFromClaims(sessionClaims);
+
+  if (!userId || !can(role, 'manage_finance')) {
     throw new Error('Não autorizado');
   }
 
@@ -28,9 +29,9 @@ export async function createExpense(data: { description: string; amount: string;
 
 export async function deleteExpense(id: string) {
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
+  const role = getRoleFromClaims(sessionClaims);
 
-  if (!userId || role !== 'dono') {
+  if (!userId || !can(role, 'manage_finance')) {
     throw new Error('Não autorizado');
   }
 
@@ -41,9 +42,9 @@ export async function deleteExpense(id: string) {
 
 export async function updateExpense(id: string, data: { description?: string; amount?: string; category?: string }) {
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
+  const role = getRoleFromClaims(sessionClaims);
 
-  if (!userId || role !== 'dono') {
+  if (!userId || !can(role, 'manage_finance')) {
     throw new Error('Não autorizado');
   }
 

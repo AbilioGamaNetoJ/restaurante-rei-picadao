@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { categories } from '@/db/schema';
 import { asc, desc } from 'drizzle-orm';
 import slugify from 'slugify';
+import { can, getRoleFromClaims } from '@/lib/permissions';
 
 export async function GET() {
   try {
@@ -25,13 +26,9 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const { userId, sessionClaims } = await auth();
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
-    }
+    const role = getRoleFromClaims(sessionClaims);
 
-    const role = (sessionClaims?.metadata as any)?.role;
-    if (role !== 'dono' && role !== 'gerente') {
+    if (!userId || !can(role, 'manage_categories')) {
       return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
     }
 

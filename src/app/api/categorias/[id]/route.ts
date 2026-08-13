@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { categories } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import slugify from 'slugify';
+import { can, getRoleFromClaims } from '@/lib/permissions';
 
 export async function PUT(
   req: Request,
@@ -12,13 +13,9 @@ export async function PUT(
   try {
     const { userId, sessionClaims } = await auth();
     const { id } = await params;
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
-    }
+    const role = getRoleFromClaims(sessionClaims);
 
-    const role = (sessionClaims?.metadata as any)?.role;
-    if (role !== 'dono' && role !== 'gerente') {
+    if (!userId || !can(role, 'manage_categories')) {
       return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
     }
 
@@ -71,13 +68,9 @@ export async function DELETE(
   try {
     const { userId, sessionClaims } = await auth();
     const { id } = await params;
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
-    }
+    const role = getRoleFromClaims(sessionClaims);
 
-    const role = (sessionClaims?.metadata as any)?.role;
-    if (role !== 'dono' && role !== 'gerente') {
+    if (!userId || !can(role, 'manage_categories')) {
       return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
     }
 

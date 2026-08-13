@@ -5,12 +5,13 @@ import { db } from '@/db';
 import { storeSettings, storeHours } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { can, getRoleFromClaims } from '@/lib/permissions';
 
 export async function updateStoreSettings(id: string | null, data: any) {
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
-  
-  if (!userId || role !== 'dono') {
+  const role = getRoleFromClaims(sessionClaims);
+
+  if (!userId || !can(role, 'edit_settings')) {
     throw new Error('Não autorizado');
   }
 
@@ -45,9 +46,9 @@ export async function updateStoreSettings(id: string | null, data: any) {
 
 export async function updateStoreHours(storeId: string, hours: any[]) {
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
-  
-  if (!userId || role !== 'dono') {
+  const role = getRoleFromClaims(sessionClaims);
+
+  if (!userId || !can(role, 'edit_settings')) {
     throw new Error('Não autorizado');
   }
 

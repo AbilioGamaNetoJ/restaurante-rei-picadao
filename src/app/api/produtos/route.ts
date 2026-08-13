@@ -3,27 +3,36 @@ import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { products, productAddons, productCategories } from '@/db/schema';
 import { eq, and, asc } from 'drizzle-orm';
+import { publicProductColumns, toPublicProduct } from '@/lib/public-catalog';
+import { can, getRoleFromClaims } from '@/lib/permissions';
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const categoryId = searchParams.get('categoryId');
-    const isAvailable = searchParams.get('isAvailable');
 
-    const filters = [];
-    if (isAvailable === 'true') filters.push(eq(products.isAvailable, true));
+    const { sessionClaims } = await auth();
+    const role = getRoleFromClaims(sessionClaims);
+    const isStaff = can(role, 'manage_products');
+
+    const filters = [eq(products.isAvailable, true)];
+    if (!isStaff && searchParams.get('isAvailable') === 'false') {
+      return NextResponse.json({ error: 'Não autorizado.' }, { status: 403 });
+    }
 
     const allProducts = await db.query.products.findMany({
-      where: filters.length > 0 ? and(...filters) : undefined,
+      where: isStaff && searchParams.get('isAvailable') === 'false' ? undefined : and(...filters),
+      columns: publicProductColumns,
       with: {
         categories: {
-          with: {
-            category: true
-          }
+          columns: { categoryId: true },
         },
         addons: {
           with: {
-            addon: true
+            addon: {
+              columns: { id: true, name: true, price: true, imageUrl: true },
+              with: { category: { columns: { id: true, name: true } } },
+            }
           }
         }
       },
@@ -36,7 +45,7 @@ export async function GET(req: Request) {
       ? allProducts.filter(p => p.categories.some(c => c.categoryId === categoryId))
       : allProducts;
 
-    return NextResponse.json(filteredProducts);
+    return NextResponse.json(filteredProducts.map(toPublicProduct));
   } catch (error) {
     console.error('Error fetching products:', error);
     return NextResponse.json(
@@ -49,13 +58,9 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const { userId, sessionClaims } = await auth();
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
-    }
+    const role = getRoleFromClaims(sessionClaims);
 
-    const role = (sessionClaims?.metadata as any)?.role;
-    if (role !== 'dono' && role !== 'gerente') {
+    if (!userId || !can(role, 'manage_products')) {
       return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
     }
 

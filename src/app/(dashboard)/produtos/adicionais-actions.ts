@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { addons } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { can, getRoleFromClaims } from '@/lib/permissions';
 
 export async function createAddon(data: { 
   name: string; 
@@ -15,9 +16,9 @@ export async function createAddon(data: {
   isAvailable?: boolean;
 }) {
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
-  
-  if (!userId || (role !== 'dono' && role !== 'gerente')) {
+  const role = getRoleFromClaims(sessionClaims);
+
+  if (!userId || !can(role, 'manage_products')) {
     throw new Error('Não autorizado');
   }
 
@@ -43,9 +44,9 @@ export async function updateAddon(id: string, data: {
   isAvailable?: boolean;
 }) {
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
-  
-  if (!userId || (role !== 'dono' && role !== 'gerente')) {
+  const role = getRoleFromClaims(sessionClaims);
+
+  if (!userId || !can(role, 'manage_products')) {
     throw new Error('Não autorizado');
   }
 
@@ -67,9 +68,9 @@ export async function updateAddon(id: string, data: {
 
 export async function deleteAddon(id: string) {
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
-  
-  if (!userId || (role !== 'dono' && role !== 'gerente')) {
+  const role = getRoleFromClaims(sessionClaims);
+
+  if (!userId || !can(role, 'manage_products')) {
     throw new Error('Não autorizado');
   }
 

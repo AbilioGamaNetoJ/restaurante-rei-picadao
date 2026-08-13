@@ -33,13 +33,18 @@ export async function sendPushNotification(
       JSON.stringify(payload),
       { TTL: 60 * 60 } // 1 hour TTL
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     // If subscription is expired/invalid (410 Gone), we should clean it up
-    if (error.statusCode === 410 || error.statusCode === 404) {
-      console.warn('[push] Subscription expired:', subscription.endpoint);
+    const statusCode = typeof error === 'object' && error !== null && 'statusCode' in error
+      ? (error as { statusCode?: unknown }).statusCode
+      : undefined;
+    if (statusCode === 410 || statusCode === 404) {
+      console.warn('[push] Subscription expired');
       throw new Error('SUBSCRIPTION_EXPIRED');
     }
-    console.error('[push] Failed to send notification:', error);
+    console.error('[push] Failed to send notification', {
+      reason: error instanceof Error ? error.name : 'UnknownError',
+    });
     throw error;
   }
 }

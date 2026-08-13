@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { expenses } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { can, getRoleFromClaims } from '@/lib/permissions';
 
 export async function PUT(
   req: Request,
@@ -11,13 +12,9 @@ export async function PUT(
   try {
     const { userId, sessionClaims } = await auth();
     const { id } = await params;
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
-    }
+    const role = getRoleFromClaims(sessionClaims);
 
-    const role = (sessionClaims?.metadata as any)?.role;
-    if (role !== 'dono') {
+    if (!userId || !can(role, 'manage_finance')) {
       return NextResponse.json({ error: 'Acesso exclusivo para o dono.' }, { status: 403 });
     }
 
@@ -54,13 +51,9 @@ export async function DELETE(
   try {
     const { userId, sessionClaims } = await auth();
     const { id } = await params;
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
-    }
+    const role = getRoleFromClaims(sessionClaims);
 
-    const role = (sessionClaims?.metadata as any)?.role;
-    if (role !== 'dono') {
+    if (!userId || !can(role, 'manage_finance')) {
       return NextResponse.json({ error: 'Acesso exclusivo para o dono.' }, { status: 403 });
     }
 

@@ -32,18 +32,8 @@ export default function EnderecoPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   React.useEffect(() => {
-    setMounted(true);
-    
-    // Carregar dados salvos do localStorage
-    const savedData = localStorage.getItem('checkout-customer-data');
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        setFormData(prev => ({ ...prev, ...parsed }));
-      } catch (e) {
-        console.error('Error parsing saved checkout data', e);
-      }
-    }
+    const mountTimer = window.setTimeout(() => setMounted(true), 0);
+    localStorage.removeItem('checkout-customer-data');
 
     // Se o carrinho estiver vazio (e já tiver hidratado), redireciona para a home
     // Aguarda um pequeno delay para garantir que o zustand hidratou os dados do localStorage
@@ -53,7 +43,10 @@ export default function EnderecoPage() {
       }
     }, 100);
 
-    return () => clearTimeout(timer);
+    return () => {
+      window.clearTimeout(mountTimer);
+      clearTimeout(timer);
+    };
   }, [router]);
 
   if (!mounted) {
@@ -94,13 +87,10 @@ export default function EnderecoPage() {
             addressState: data.uf,
           };
           setFormData(newAddressData);
-          localStorage.setItem('checkout-customer-data', JSON.stringify(newAddressData));
         }
       } catch (error) {
         console.error('ViaCEP error:', error);
       }
-    } else {
-      localStorage.setItem('checkout-customer-data', JSON.stringify({ ...formData, addressZip: formattedZip }));
     }
   };
 
@@ -108,9 +98,6 @@ export default function EnderecoPage() {
     const { name, value } = e.target;
     const newFormData = { ...formData, [name]: value };
     setFormData(newFormData);
-    
-    // Salvar no localStorage
-    localStorage.setItem('checkout-customer-data', JSON.stringify(newFormData));
     
     // Validar e-mail em tempo real
     if (name === 'customerEmail') {
@@ -150,7 +137,7 @@ export default function EnderecoPage() {
     addressState: z.string().length(2, 'UF inválida'),
   });
 
-  const validateField = (name: string, value: any) => {
+  const validateField = (name: string, value: unknown) => {
     const fieldSchema = checkoutSchema.shape[name as keyof typeof checkoutSchema.shape];
     if (!fieldSchema) return;
 
@@ -194,7 +181,15 @@ export default function EnderecoPage() {
       const res = await fetch('/api/frete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          addressStreet: validatedData.addressStreet,
+          addressNumber: validatedData.addressNumber,
+          addressComplement: validatedData.addressComplement,
+          addressNeighborhood: validatedData.addressNeighborhood,
+          addressCity: validatedData.addressCity,
+          addressState: validatedData.addressState,
+          addressZip: validatedData.addressZip,
+        }),
       });
 
       const data = await res.json();
@@ -207,14 +202,13 @@ export default function EnderecoPage() {
 
       // 2. Save checkout data to state (using cleaned data)
       setCheckoutData({
-        ...formData,
+        ...validatedData,
         customerPhone: validatedData.customerPhone,
         customerCpfCnpj: validatedData.customerCpfCnpj,
         addressZip: validatedData.addressZip,
         distanceKm: data.distanceKm,
         deliveryFee: data.deliveryFee,
-        lat: data.lat,
-        lng: data.lng,
+        deliveryQuoteId: data.quoteId,
       });
 
       // 3. Redirect to payment
@@ -270,7 +264,6 @@ export default function EnderecoPage() {
                   
                   const newFormData = { ...formData, customerPhone: v };
                   setFormData(newFormData);
-                  localStorage.setItem('checkout-customer-data', JSON.stringify(newFormData));
                   
                   // Validar telefone em tempo real
                   validateField('customerPhone', v);
@@ -318,7 +311,6 @@ export default function EnderecoPage() {
                   }
                   const newFormData = { ...formData, customerCpfCnpj: v };
                   setFormData(newFormData);
-                  localStorage.setItem('checkout-customer-data', JSON.stringify(newFormData));
                 }}
                 placeholder="000.000.000-00"
                 maxLength={18}
@@ -379,7 +371,6 @@ export default function EnderecoPage() {
                     const v = e.target.value.toUpperCase();
                     const newFormData = { ...formData, addressState: v };
                     setFormData(newFormData);
-                    localStorage.setItem('checkout-customer-data', JSON.stringify(newFormData));
                   }} 
                   maxLength={2} 
                   placeholder="SC"

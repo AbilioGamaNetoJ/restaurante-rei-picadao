@@ -1,114 +1,82 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { storeSettings } from '@/db/schema';
+import { deliveryQuotes } from '@/db/schema';
+import { freightRequestSchema, getAddressHash } from '@/lib/checkout';
 import { calculateDistance, geocodeAddress } from '@/lib/google-maps';
+import { checkRateLimit, createRateLimitHeaders, getRequestIp } from '@/lib/rate-limit';
+import { originGuard } from '@/lib/origin-guard';
 
-export async function POST(req: Request) {
+const QUOTE_TTL_MS = 15 * 60 * 1000;
+
+export async function POST(request: Request) {
+  const csrfReject = originGuard(request);
+  if (csrfReject) return csrfReject;
+
+  const rateLimit = await checkRateLimit('freight', getRequestIp(request));
+  const rateLimitHeaders = createRateLimitHeaders(rateLimit);
+
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: rateLimit.unavailable ? 'Serviço temporariamente indisponível.' : 'Muitas consultas de frete. Tente novamente em alguns minutos.' },
+      { status: rateLimit.unavailable ? 503 : 429, headers: rateLimitHeaders },
+    );
+  }
+
   try {
-    const body = await req.json();
-    const { addressStreet, addressNumber, addressNeighborhood, addressCity, addressState, addressZip } = body;
-
-    if (!addressStreet || !addressNumber || !addressNeighborhood || !addressCity || !addressState || !addressZip) {
-      return NextResponse.json(
-        { error: 'Endereço incompleto para cálculo de frete.' },
-        { status: 400 }
-      );
+    const validation = freightRequestSchema.safeParse(await request.json());
+    if (!validation.success) {
+      return NextResponse.json({ error: 'Endereço inválido para cálculo de frete.' }, { status: 400, headers: rateLimitHeaders });
     }
 
-    const fullAddress = `${addressStreet}, ${addressNumber}, ${addressNeighborhood}, ${addressCity}, ${addressState}, ${addressZip}, Brazil`;
-
-    // 1. Get Store Settings
+    const address = validation.data;
     const settings = await db.query.storeSettings.findFirst();
     if (!settings) {
-      return NextResponse.json(
-        { error: 'Configurações da loja não encontradas.' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Configurações da loja não encontradas.' }, { status: 503, headers: rateLimitHeaders });
     }
 
-    // 2. Geocode store and customer addresses
     let origin = { lat: Number(settings.lat), lng: Number(settings.lng) };
-    
-    // Fallback if DB doesn't have lat/lng yet
     if (!origin.lat || !origin.lng) {
-      const originGeo = await geocodeAddress(settings.address);
-      if (!originGeo) {
-        return NextResponse.json(
-          { error: 'Falha ao localizar o endereço da loja.' },
-          { status: 500 }
-        );
+      const geocodedOrigin = await geocodeAddress(settings.address);
+      if (!geocodedOrigin) {
+        return NextResponse.json({ error: 'Não foi possível calcular o frete no momento.' }, { status: 502, headers: rateLimitHeaders });
       }
-      origin = originGeo;
+      origin = geocodedOrigin;
     }
 
+    const fullAddress = `${address.addressStreet}, ${address.addressNumber}, ${address.addressNeighborhood}, ${address.addressCity}, ${address.addressState}, ${address.addressZip}, Brazil`;
     const destination = await geocodeAddress(fullAddress);
     if (!destination) {
+      return NextResponse.json({ error: 'Não foi possível localizar este endereço.' }, { status: 400, headers: rateLimitHeaders });
+    }
+
+    const route = await calculateDistance(origin, destination);
+    if (!route) {
+      return NextResponse.json({ error: 'Não foi possível calcular a rota.' }, { status: 502, headers: rateLimitHeaders });
+    }
+
+    const maximumDistanceKm = Number(settings.deliveryRadiusKm);
+    if (route.distanceKm > maximumDistanceKm) {
       return NextResponse.json(
-        { error: 'Não foi possível encontrar este endereço no mapa. Verifique os dados.' },
-        { status: 400 }
+        { error: `Não realizamos entregas acima de ${maximumDistanceKm} km de distância.` },
+        { status: 422, headers: rateLimitHeaders },
       );
     }
 
-    // 3. Calculate distance
-    const routeInfo = await calculateDistance(origin, destination);
-    
-    if (!routeInfo) {
-      return NextResponse.json(
-        { error: 'Erro ao calcular rota até o seu endereço.' },
-        { status: 500 }
-      );
-    }
+    const deliveryFee = Math.round(route.distanceKm * Number(settings.deliveryFeeKm) * 100) / 100;
+    const expiresAt = new Date(Date.now() + QUOTE_TTL_MS);
+    const [quote] = await db.insert(deliveryQuotes).values({
+      addressHash: getAddressHash(address),
+      distanceKm: route.distanceKm.toFixed(2),
+      deliveryFee: deliveryFee.toFixed(2),
+      expiresAt,
+    }).returning({ id: deliveryQuotes.id });
 
-    const { distanceKm } = routeInfo;
-    const maxRadius = Number(settings.deliveryRadiusKm) || 10;
-
-    console.log('--- DEBUG FRETE ---');
-    console.log('Origin:', origin);
-    console.log('Full Address:', fullAddress);
-    console.log('Destination Coords:', destination);
-    console.log('Calculated Distance (km):', distanceKm);
-    console.log('Max Radius (km):', maxRadius);
-    console.log('-------------------');
-
-    const originAddress = settings.address;
-
-
-    // 4. Validate Delivery Radius
-    if (distanceKm > maxRadius) {
-      return NextResponse.json(
-        { 
-          error: `Desculpe, mas não realizamos pedidos em endereços com mais de ${maxRadius}km de distância da loja.`,
-          distanceKm,
-          debug: {
-            origin: originAddress,
-            destination: fullAddress,
-            originCoords: origin,
-            destinationCoords: destination
-          }
-        },
-
-        { status: 400 }
-      );
-    }
-
-    // 5. Calculate Fee
-    const feePerKm = Number(settings.deliveryFeeKm) || 1.50;
-    let deliveryFee = distanceKm * feePerKm;
-    
-    // Round to 2 decimal places
-    deliveryFee = Math.round(deliveryFee * 100) / 100;
-
-    return NextResponse.json({
-      distanceKm,
-      deliveryFee,
-      lat: destination.lat,
-      lng: destination.lng,
-    });
-  } catch (error) {
-    console.error('Error calculating delivery fee:', error);
     return NextResponse.json(
-      { error: 'Erro interno ao calcular o frete.' },
-      { status: 500 }
+      { quoteId: quote.id, distanceKm: route.distanceKm, deliveryFee, expiresAt: expiresAt.toISOString() },
+      { headers: rateLimitHeaders },
     );
+  } catch (error) {
+    console.error('Delivery quote failed', error);
+    return NextResponse.json({ error: 'Erro interno ao calcular o frete.' }, { status: 500, headers: rateLimitHeaders });
   }
 }

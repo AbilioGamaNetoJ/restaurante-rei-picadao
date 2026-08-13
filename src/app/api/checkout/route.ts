@@ -1,71 +1,155 @@
 import { NextResponse } from 'next/server';
+import { and, eq, gt, inArray, isNull } from 'drizzle-orm';
 import { db } from '@/db';
-import { orders, orderItems, orderItemAddons } from '@/db/schema';
-import { eq, or, and, notInArray } from 'drizzle-orm';
+import { deliveryQuotes, orderItemAddons, orderItems, orders, products } from '@/db/schema';
+import { checkoutRequestSchema, formatCents, getAddressHash, getCheckoutIdentityHash, toCents } from '@/lib/checkout';
 import { createAsaasCustomer, createCheckout } from '@/lib/asaas';
-import crypto from 'crypto';
-import { z } from 'zod';
+import { createTrackingToken } from '@/lib/order-tracking';
+import { checkRateLimit, createRateLimitHeaders, getRequestIp } from '@/lib/rate-limit';
+import { originGuard } from '@/lib/origin-guard';
 
-const checkoutSchema = z.object({
-  items: z.array(z.any()).min(1),
-  subtotal: z.number(),
-  deliveryFee: z.number(),
-  total: z.number(),
-  checkoutData: z.object({
-    customerName: z.string().min(3),
-    customerEmail: z.string().email(),
-    customerPhone: z.string().min(10), // Expected to be cleaned numbers already
-    customerCpfCnpj: z.string().min(11), // Expected to be cleaned numbers already
-    addressStreet: z.string().min(3),
-    addressNumber: z.string().min(1),
-    addressComplement: z.string().optional(),
-    addressNeighborhood: z.string().min(2),
-    addressCity: z.string().min(2),
-    addressState: z.string().length(2),
-    addressZip: z.string().length(8),
-    distanceKm: z.number().optional(),
-  }),
-});
+export async function POST(request: Request) {
+  const csrfReject = originGuard(request);
+  if (csrfReject) return csrfReject;
 
-export async function POST(req: Request) {
+  const rateLimit = await checkRateLimit('checkout', getRequestIp(request));
+  let rateLimitHeaders = createRateLimitHeaders(rateLimit);
+
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: rateLimit.unavailable ? 'Serviço temporariamente indisponível.' : 'Muitas tentativas. Aguarde antes de tentar novamente.' },
+      { status: rateLimit.unavailable ? 503 : 429, headers: rateLimitHeaders },
+    );
+  }
+
   try {
-    const body = await req.json();
-    
-    const validation = checkoutSchema.safeParse(body);
+    const validation = checkoutRequestSchema.safeParse(await request.json());
     if (!validation.success) {
-      return NextResponse.json({ error: 'Dados de checkout inválidos.', details: validation.error.format() }, { status: 400 });
+      return NextResponse.json({ error: 'Dados de checkout inválidos.' }, { status: 400, headers: rateLimitHeaders });
     }
 
-    const { items, checkoutData, subtotal, deliveryFee, total } = validation.data;
+    const { items, checkoutData, deliveryQuoteId, billingType } = validation.data;
+    const identityRateLimit = await checkRateLimit(
+      'checkout',
+      `identity:${getCheckoutIdentityHash(checkoutData.customerEmail, checkoutData.customerPhone)}`,
+    );
+    rateLimitHeaders = createRateLimitHeaders(identityRateLimit);
+    if (!identityRateLimit.success) {
+      return NextResponse.json(
+        { error: identityRateLimit.unavailable ? 'Serviço temporariamente indisponível.' : 'Muitas tentativas. Aguarde antes de tentar novamente.' },
+        { status: identityRateLimit.unavailable ? 503 : 429, headers: rateLimitHeaders },
+      );
+    }
 
-    // 1. Check for existing active orders
-    const activeOrder = await db.query.orders.findFirst({
-      where: (orders, { and, or, eq, notInArray }) => and(
-        or(
-          eq(orders.customerEmail, checkoutData.customerEmail),
-          eq(orders.customerPhone, checkoutData.customerPhone)
+    const productIds = [...new Set(items.map((item) => item.productId))];
+    const [quote, availableProducts, settings] = await Promise.all([
+      db.query.deliveryQuotes.findFirst({
+        where: and(
+          eq(deliveryQuotes.id, deliveryQuoteId),
+          eq(deliveryQuotes.addressHash, getAddressHash(checkoutData)),
+          gt(deliveryQuotes.expiresAt, new Date()),
+          isNull(deliveryQuotes.consumedAt),
         ),
-        notInArray(orders.status, ['delivered', 'cancelled'])
-      ),
-    });
+      }),
+      db.query.products.findMany({
+        where: and(inArray(products.id, productIds), eq(products.isAvailable, true)),
+        columns: { id: true, name: true, price: true },
+        with: {
+          addons: {
+            with: {
+              addon: {
+                columns: { id: true, name: true, price: true, imageUrl: true, isAvailable: true },
+              },
+            },
+          },
+        },
+      }),
+      db.query.storeSettings.findFirst({ columns: { minOrder: true } }),
+    ]);
 
-    if (activeOrder) {
-      if (activeOrder.status === 'pending') {
-        // Cancel the abandoned pending order to allow the new one
-        await db.update(orders)
-          .set({ status: 'cancelled' as any })
-          .where(eq(orders.id, activeOrder.id));
-      } else {
-        return NextResponse.json({ 
-          error: 'Você já possui um pedido em andamento sendo preparado ou entregue. Aguarde a conclusão para realizar outro.' 
-        }, { status: 400 });
-      }
+    if (!quote) {
+      return NextResponse.json({ error: 'A cotação de frete expirou. Calcule o frete novamente.' }, { status: 409, headers: rateLimitHeaders });
     }
 
-    // 2. Generate Order ID upfront
-    const orderId = crypto.randomUUID();
+    if (!settings || availableProducts.length !== productIds.length) {
+      return NextResponse.json({ error: 'Um ou mais produtos não estão disponíveis.' }, { status: 409, headers: rateLimitHeaders });
+    }
 
-    // 3. Create or get Customer in Asaas
+    const productById = new Map(availableProducts.map((product) => [product.id, product]));
+    const itemsToInsert: Array<{
+      productId: string;
+      productName: string;
+      productPrice: string;
+      quantity: number;
+      comment?: string;
+      subtotal: string;
+      addons: Array<{ addonId: string; addonName: string; addonPrice: string; quantity: number; imageUrl: string | null }>;
+    }> = [];
+    let subtotalCents = 0;
+
+    for (const requestedItem of items) {
+      const product = productById.get(requestedItem.productId);
+      if (!product) {
+        return NextResponse.json({ error: 'Produto indisponível.' }, { status: 409, headers: rateLimitHeaders });
+      }
+
+      const addonsById = new Map(
+        product.addons
+          .map((relation) => relation.addon)
+          .filter((addon) => addon?.isAvailable)
+          .map((addon) => [addon.id, addon]),
+      );
+      const seenAddonIds = new Set<string>();
+      const addonsToInsert: Array<{ addonId: string; addonName: string; addonPrice: string; quantity: number; imageUrl: string | null }> = [];
+      let addonsCents = 0;
+
+      for (const requestedAddon of requestedItem.addons) {
+        if (seenAddonIds.has(requestedAddon.id)) {
+          return NextResponse.json({ error: 'Adicional duplicado no pedido.' }, { status: 400, headers: rateLimitHeaders });
+        }
+
+        const addon = addonsById.get(requestedAddon.id);
+        if (!addon) {
+          return NextResponse.json({ error: 'Adicional inválido ou indisponível.' }, { status: 409, headers: rateLimitHeaders });
+        }
+
+        seenAddonIds.add(addon.id);
+        const addonPriceCents = toCents(addon.price);
+        addonsCents += addonPriceCents * requestedAddon.quantity;
+        addonsToInsert.push({
+          addonId: addon.id,
+          addonName: addon.name,
+          addonPrice: formatCents(addonPriceCents),
+          quantity: requestedAddon.quantity,
+          imageUrl: addon.imageUrl,
+        });
+      }
+
+      const productPriceCents = toCents(product.price);
+      const itemSubtotalCents = productPriceCents * requestedItem.quantity + addonsCents;
+      subtotalCents += itemSubtotalCents;
+      itemsToInsert.push({
+        productId: product.id,
+        productName: product.name,
+        productPrice: formatCents(productPriceCents),
+        quantity: requestedItem.quantity,
+        comment: requestedItem.comment,
+        subtotal: formatCents(itemSubtotalCents),
+        addons: addonsToInsert,
+      });
+    }
+
+    const minimumOrderCents = toCents(settings.minOrder);
+    if (subtotalCents < minimumOrderCents) {
+      return NextResponse.json({ error: 'O pedido não atingiu o valor mínimo da loja.' }, { status: 422, headers: rateLimitHeaders });
+    }
+
+    const deliveryFeeCents = toCents(quote.deliveryFee);
+    const totalCents = subtotalCents + deliveryFeeCents;
+    const orderId = crypto.randomUUID();
+    const tracking = createTrackingToken();
+    const trackingExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
     const customer = await createAsaasCustomer(
       checkoutData.customerName,
       checkoutData.customerEmail,
@@ -77,108 +161,89 @@ export async function POST(req: Request) {
         addressNumber: checkoutData.addressNumber,
         addressComplement: checkoutData.addressComplement,
         addressNeighborhood: checkoutData.addressNeighborhood,
-      }
+      },
     );
 
     if (!customer) {
-      return NextResponse.json({ error: 'Erro ao registrar cliente no gateway de pagamento.' }, { status: 500 });
+      return NextResponse.json({ error: 'Não foi possível iniciar o pagamento.' }, { status: 502, headers: rateLimitHeaders });
     }
 
-    // 4. Save order to database FIRST (before Asaas payment)
-    // This prevents the race condition where the Asaas webhook arrives
-    // before the order exists in the DB (especially with instant PIX confirmation)
-    await db.insert(orders).values({
-      id: orderId,
-      customerName: checkoutData.customerName,
-      customerEmail: checkoutData.customerEmail,
-      customerPhone: checkoutData.customerPhone,
-      addressStreet: checkoutData.addressStreet,
-      addressNumber: checkoutData.addressNumber,
-      addressComplement: checkoutData.addressComplement,
-      addressNeighborhood: checkoutData.addressNeighborhood,
-      addressCity: checkoutData.addressCity,
-      addressState: checkoutData.addressState,
-      addressZip: checkoutData.addressZip,
-      distanceKm: (checkoutData.distanceKm ?? 0).toString(),
-      deliveryFee: (deliveryFee ?? 0).toString(),
-      subtotal: (subtotal ?? 0).toString(),
-      total: (total ?? 0).toString(),
-      status: 'pending',
+    await db.transaction(async (transaction) => {
+      await transaction.update(deliveryQuotes)
+        .set({ consumedAt: new Date() })
+        .where(and(eq(deliveryQuotes.id, deliveryQuoteId), isNull(deliveryQuotes.consumedAt)));
+
+      await transaction.insert(orders).values({
+        id: orderId,
+        customerName: checkoutData.customerName,
+        customerEmail: checkoutData.customerEmail,
+        customerPhone: checkoutData.customerPhone,
+        addressStreet: checkoutData.addressStreet,
+        addressNumber: checkoutData.addressNumber,
+        addressComplement: checkoutData.addressComplement,
+        addressNeighborhood: checkoutData.addressNeighborhood,
+        addressCity: checkoutData.addressCity,
+        addressState: checkoutData.addressState,
+        addressZip: checkoutData.addressZip,
+        distanceKm: quote.distanceKm,
+        deliveryFee: formatCents(deliveryFeeCents),
+        subtotal: formatCents(subtotalCents),
+        total: formatCents(totalCents),
+        status: 'pending',
+        trackingTokenHash: tracking.hash,
+        trackingTokenExpiresAt: trackingExpiresAt,
+      });
+
+      for (const item of itemsToInsert) {
+        const [insertedItem] = await transaction.insert(orderItems).values({
+          orderId,
+          productId: item.productId,
+          productName: item.productName,
+          productPrice: item.productPrice,
+          quantity: item.quantity,
+          comment: item.comment,
+          subtotal: item.subtotal,
+        }).returning({ id: orderItems.id });
+
+        if (item.addons.length > 0) {
+          await transaction.insert(orderItemAddons).values(item.addons.map((addon) => ({
+            orderItemId: insertedItem.id,
+            addonId: addon.addonId,
+            addonName: addon.addonName,
+            addonPrice: addon.addonPrice,
+            quantity: addon.quantity,
+            imageUrl: addon.imageUrl,
+          })));
+        }
+      }
     });
 
-    // 5. Insert Items and Addons
-    for (const item of items) {
-      const [insertedItem] = await db.insert(orderItems).values({
-        orderId,
-        productId: item.productId,
-        productName: item.name,
-        productPrice: item.price.toString(),
-        quantity: item.quantity,
-        comment: item.comment,
-        subtotal: item.subtotal.toString(),
-      }).returning({ id: orderItems.id });
-
-      const orderItemId = insertedItem.id;
-
-      if (item.addons && item.addons.length > 0) {
-        const addonsToInsert = item.addons.map((addon: any) => ({
-          orderItemId,
-          addonId: addon.id,
-          addonName: addon.name,
-          addonPrice: addon.price.toString(),
-          quantity: addon.quantity,
-          imageUrl: addon.imageUrl,
-        }));
-        
-        await db.insert(orderItemAddons).values(addonsToInsert);
-      }
-    }
-
-    // 6. Create payment in Asaas AFTER order is saved
-    // Now the webhook can safely find and update the order
-    const description = `Pedido #${orderId.split('-')[0].toUpperCase()} - Rei do Picadão`;
-    const billingType = body.billingType || 'UNDEFINED';
-    let checkoutResult: { invoiceUrl: string, paymentId: string } | null = null;
-
     try {
-      checkoutResult = await createCheckout(
+      const checkout = await createCheckout(
         orderId,
         customer.id,
-        total,
-        description,
-        billingType
+        totalCents / 100,
+        `Pedido #${orderId.split('-')[0].toUpperCase()} - Rei do Picadão`,
+        tracking.token,
+        billingType,
       );
-    } catch (asaasError) {
-      // If Asaas payment creation fails, cancel the order
-      console.error('Asaas payment creation failed, cancelling order:', asaasError);
+
+      if (!checkout) throw new Error('Checkout unavailable');
+
       await db.update(orders)
-        .set({ status: 'cancelled' as any })
+        .set({ asaasCheckoutUrl: checkout.invoiceUrl, paymentId: checkout.paymentId })
         .where(eq(orders.id, orderId));
-      return NextResponse.json({ error: 'Erro ao gerar link de pagamento no Asaas.' }, { status: 500 });
+
+      return NextResponse.json(
+        { checkoutUrl: checkout.invoiceUrl, orderId, trackingToken: tracking.token },
+        { headers: rateLimitHeaders },
+      );
+    } catch {
+      await db.update(orders).set({ status: 'cancelled' }).where(eq(orders.id, orderId));
+      return NextResponse.json({ error: 'Não foi possível gerar o pagamento.' }, { status: 502, headers: rateLimitHeaders });
     }
-
-    if (!checkoutResult) {
-      await db.update(orders)
-        .set({ status: 'cancelled' as any })
-        .where(eq(orders.id, orderId));
-      return NextResponse.json({ error: 'Link de pagamento não recebido do Asaas.' }, { status: 500 });
-    }
-
-    // 7. Update order with checkout URL and paymentId
-    await db.update(orders)
-      .set({ 
-        asaasCheckoutUrl: checkoutResult.invoiceUrl,
-        paymentId: checkoutResult.paymentId
-      })
-      .where(eq(orders.id, orderId));
-
-    return NextResponse.json({ checkoutUrl: checkoutResult.invoiceUrl, orderId });
-
-  } catch (error: any) {
-    console.error('Error creating checkout:', error);
-    return NextResponse.json({ 
-      error: error.message || 'Erro interno ao processar o pedido.',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    }, { status: 500 });
+  } catch (error) {
+    console.error('Checkout processing failed', error);
+    return NextResponse.json({ error: 'Erro interno ao processar o pedido.' }, { status: 500, headers: rateLimitHeaders });
   }
 }

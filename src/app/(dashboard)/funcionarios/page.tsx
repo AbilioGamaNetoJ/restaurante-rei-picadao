@@ -4,10 +4,11 @@ import { FuncionariosClient } from './funcionarios-client';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getRoleFromClaims } from '@/lib/permissions';
 
 export default async function FuncionariosPage() {
   const { sessionClaims, userId } = await auth();
-  const currentRole = (sessionClaims?.metadata as any)?.role;
+  const currentRole = getRoleFromClaims(sessionClaims);
 
   const client = await clerkClient();
   const clerkUsers = await client.users.getUserList();
@@ -48,7 +49,7 @@ export default async function FuncionariosPage() {
         </p>
       </div>
 
-      <FuncionariosClient users={serializedUsers} currentRole={currentRole} />
+      <FuncionariosClient users={serializedUsers} currentRole={currentRole ?? 'cliente'} />
     </div>
   );
 }

@@ -5,15 +5,16 @@ import { db } from '@/db';
 import { orders, users, products, expenses } from '@/db/schema';
 import { eq, sql, and, gte, lte, inArray } from 'drizzle-orm';
 import { DashboardClient } from './dashboard-client';
+import { can, getRoleFromClaims } from '@/lib/permissions';
 
 export default async function DashboardPage(props: {
   searchParams: Promise<{ month?: string }>;
 }) {
   const searchParams = await props.searchParams;
   const { sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
+  const role = getRoleFromClaims(sessionClaims);
 
-  if (role !== 'dono') {
+  if (!can(role, 'view_metrics')) {
     redirect('/pedidos');
   }
 

@@ -1,49 +1,67 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { getPaymentByExternalReference } from '@/lib/asaas';
+import { getTrackableOrder } from '@/lib/order-access';
+import { checkRateLimit, createRateLimitHeaders, getRequestIp } from '@/lib/rate-limit';
 
 const ASAAS_API_URL = process.env.ASAAS_API_URL || 'https://sandbox.asaas.com/api/v3';
+const trackingQuerySchema = z.object({
+  orderId: z.string().uuid(),
+  token: z.string().min(32).max(128),
+});
 
-export async function GET(req: Request) {
+export async function GET(request: Request) {
+  const rateLimit = await checkRateLimit('pixQrCode', getRequestIp(request));
+  const rateLimitHeaders = createRateLimitHeaders(rateLimit);
+
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: rateLimit.unavailable ? 'Serviço temporariamente indisponível.' : 'Muitas consultas. Aguarde antes de tentar novamente.' },
+      { status: rateLimit.unavailable ? 503 : 429, headers: rateLimitHeaders },
+    );
+  }
+
+  const searchParams = new URL(request.url).searchParams;
+  const validation = trackingQuerySchema.safeParse({
+    orderId: searchParams.get('orderId'),
+    token: searchParams.get('token'),
+  });
+
+  if (!validation.success) {
+    return NextResponse.json({ error: 'Pedido não encontrado.' }, { status: 404, headers: rateLimitHeaders });
+  }
+
   try {
-    const { searchParams } = new URL(req.url);
-    const orderId = searchParams.get('orderId');
-
-    if (!orderId) {
-      return NextResponse.json({ error: 'orderId is required' }, { status: 400 });
+    const order = await getTrackableOrder(validation.data.orderId, validation.data.token);
+    if (!order) {
+      return NextResponse.json({ error: 'Pedido não encontrado.' }, { status: 404, headers: rateLimitHeaders });
     }
 
     const apiKey = process.env.ASAAS_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'ASAAS_API_KEY not configured' }, { status: 500 });
+      console.error('ASAAS_API_KEY is not configured');
+      return NextResponse.json({ error: 'Serviço temporariamente indisponível.' }, { status: 503, headers: rateLimitHeaders });
     }
 
-    // 1. Get Asaas Payment ID from our orderId (externalReference)
-    const asaasPayment = await getPaymentByExternalReference(orderId);
-
-    // If it's not found or it's not a PIX payment, return null safely
-    if (!asaasPayment || asaasPayment.billingType !== 'PIX') {
-      return NextResponse.json({ qrCode: null });
+    const payment = await getPaymentByExternalReference(order.id);
+    if (!payment || payment.billingType !== 'PIX') {
+      return NextResponse.json({ qrCode: null }, { headers: rateLimitHeaders });
     }
 
-    // 2. Fetch the PIX QR Code from Asaas API
-    const res = await fetch(`${ASAAS_API_URL}/payments/${asaasPayment.id}/pixQrCode`, {
-      method: 'GET',
-      headers: {
-        'access_token': apiKey,
-      },
-      cache: 'no-store'
+    const response = await fetch(`${ASAAS_API_URL}/payments/${payment.id}/pixQrCode`, {
+      headers: { access_token: apiKey },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10_000),
     });
 
-    if (!res.ok) {
-      console.error('[pix-qrcode] Error fetching QR Code from Asaas:', await res.text());
-      return NextResponse.json({ qrCode: null });
+    if (!response.ok) {
+      console.error('Asaas PIX QR code request failed', { status: response.status });
+      return NextResponse.json({ qrCode: null }, { headers: rateLimitHeaders });
     }
 
-    const qrCodeData = await res.json();
-
-    return NextResponse.json({ qrCode: qrCodeData });
+    return NextResponse.json({ qrCode: await response.json() }, { headers: rateLimitHeaders });
   } catch (error) {
-    console.error('[pix-qrcode] Exception:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('PIX QR code request failed', error);
+    return NextResponse.json({ error: 'Não foi possível consultar o pedido.' }, { status: 502, headers: rateLimitHeaders });
   }
 }

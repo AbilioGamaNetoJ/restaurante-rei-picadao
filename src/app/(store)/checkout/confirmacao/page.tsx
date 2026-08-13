@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useCartStore } from '@/stores/cart-store';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Clock, CreditCard, ChefHat, PackageCheck, Bike, CheckCircle2, XCircle, Copy } from 'lucide-react';
@@ -25,11 +25,11 @@ const statusConfig: Record<OrderStatus, { label: string; icon: React.ElementType
 function ConfirmacaoContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
-  const router = useRouter();
+  const trackingToken = searchParams.get('token');
   const clearCart = useCartStore((state) => state.clearCart);
   
   const [status, setStatus] = useState<OrderStatus>('pending');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => Boolean(orderId && trackingToken));
   const [confirmingDelivery, setConfirmingDelivery] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<{ encodedImage: string, payload: string } | null>(null);
   const [copying, setCopying] = useState(false);
@@ -40,15 +40,15 @@ function ConfirmacaoContent() {
   }, [clearCart]);
 
   useEffect(() => {
-    if (!orderId) {
-      setLoading(false);
+    if (!orderId || !trackingToken) {
       return;
     }
 
     const fetchStatus = async () => {
       try {
         // Use the check-status endpoint which queries Asaas directly as fallback
-        const res = await fetch(`/api/orders/check-status?orderId=${orderId}`);
+        const params = new URLSearchParams({ orderId, token: trackingToken });
+        const res = await fetch(`/api/orders/check-status?${params.toString()}`);
         if (res.ok) {
           const data = await res.json();
           if (data.status) {
@@ -56,7 +56,7 @@ function ConfirmacaoContent() {
             
             // Se ainda estiver aguardando pagamento, busca o QR Code PIX (se existir)
             if (data.status === 'pending') {
-               fetch(`/api/orders/pix-qrcode?orderId=${orderId}`)
+               fetch(`/api/orders/pix-qrcode?${params.toString()}`)
                  .then(r => r.json())
                  .then(d => {
                     if (d.qrCode) setQrCodeData(d.qrCode);
@@ -76,13 +76,13 @@ function ConfirmacaoContent() {
     // Poll every 5 seconds — endpoint checks Asaas API if status is still pending
     const interval = setInterval(fetchStatus, 5000);
     return () => clearInterval(interval);
-  }, [orderId]);
+  }, [orderId, trackingToken]);
 
   const handleConfirmDelivery = async () => {
-    if (!orderId) return;
+    if (!orderId || !trackingToken) return;
     
     setConfirmingDelivery(true);
-    const result = await confirmOrderDelivery(orderId);
+    const result = await confirmOrderDelivery(orderId, trackingToken);
     if (result.success) {
       setStatus('delivered');
       toast.success('Que ótimo! Agradecemos a preferência.');
@@ -100,7 +100,7 @@ function ConfirmacaoContent() {
     );
   }
 
-  if (!orderId) {
+  if (!orderId || !trackingToken) {
     return (
       <div className="container max-w-2xl mx-auto py-20 px-4 text-center">
         <h1 className="text-2xl font-bold mb-4">Pedido não encontrado</h1>
@@ -186,7 +186,6 @@ function ConfirmacaoContent() {
           
           <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-muted before:to-transparent">
             {Object.entries(statusConfig).filter(([k]) => k !== 'cancelled').map(([key, config]) => {
-              const stepStatus = key as OrderStatus;
               const stepNumber = config.step;
               const Icon = config.icon;
               

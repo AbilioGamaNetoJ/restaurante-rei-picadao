@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { categories } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { can, getRoleFromClaims } from '@/lib/permissions';
 
 function generateSlug(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -12,9 +13,9 @@ function generateSlug(name: string) {
 
 export async function createCategory(data: { name: string; type: 'produto' | 'adicional'; sortOrder: number }) {
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
-  
-  if (!userId || (role !== 'dono' && role !== 'gerente')) {
+  const role = getRoleFromClaims(sessionClaims);
+
+  if (!userId || !can(role, 'manage_categories')) {
     throw new Error('Não autorizado');
   }
 
@@ -31,9 +32,9 @@ export async function createCategory(data: { name: string; type: 'produto' | 'ad
 
 export async function updateCategory(id: string, data: { name: string; type: 'produto' | 'adicional'; sortOrder: number; isActive: boolean }) {
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
-  
-  if (!userId || (role !== 'dono' && role !== 'gerente')) {
+  const role = getRoleFromClaims(sessionClaims);
+
+  if (!userId || !can(role, 'manage_categories')) {
     throw new Error('Não autorizado');
   }
 
@@ -54,9 +55,9 @@ export async function updateCategory(id: string, data: { name: string; type: 'pr
 
 export async function deleteCategory(id: string) {
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
-  
-  if (!userId || (role !== 'dono' && role !== 'gerente')) {
+  const role = getRoleFromClaims(sessionClaims);
+
+  if (!userId || !can(role, 'manage_categories')) {
     throw new Error('Não autorizado');
   }
 

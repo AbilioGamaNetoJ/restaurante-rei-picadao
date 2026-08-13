@@ -1,89 +1,82 @@
 import { NextResponse } from 'next/server';
 import { auth, clerkClient } from '@clerk/nextjs/server';
+import { z } from 'zod';
+import { can, getRoleFromClaims, isRole } from '@/lib/permissions';
+
+const createEmployeeSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+  password: z.string().min(12).max(128),
+  firstName: z.string().trim().min(1).max(80).optional(),
+  lastName: z.string().trim().min(1).max(80).optional(),
+  role: z.enum(['gerente', 'funcionario']),
+}).strict();
+
+async function getStaffManager() {
+  const { userId, sessionClaims } = await auth();
+  const role = getRoleFromClaims(sessionClaims);
+  return { userId, role };
+}
 
 export async function GET() {
   try {
-    const { userId, sessionClaims } = await auth();
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
-    }
-
-    const role = (sessionClaims?.metadata as any)?.role;
-    if (role !== 'dono' && role !== 'gerente') {
-      return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
+    const { userId, role } = await getStaffManager();
+    if (!userId || !can(role, 'manage_staff')) {
+      return NextResponse.json({ error: 'Não autorizado.' }, { status: 403 });
     }
 
     const client = await clerkClient();
     const users = await client.users.getUserList();
+    const staff = users.data.flatMap((user) => {
+      const userRole = (user.publicMetadata as Record<string, unknown>).role;
+      if (!isRole(userRole) || userRole === 'cliente') return [];
 
-    // Filter out clients (only return users with a staff role)
-    const staff = users.data.map(user => ({
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.emailAddresses[0]?.emailAddress,
-      role: (user.publicMetadata as any)?.role || 'cliente',
-    })).filter(u => u.role !== 'cliente');
+      return [{
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.emailAddresses[0]?.emailAddress,
+        role: userRole,
+      }];
+    });
 
     return NextResponse.json(staff);
   } catch (error) {
-    console.error('Error fetching employees:', error);
-    return NextResponse.json(
-      { error: 'Erro ao buscar funcionários.' },
-      { status: 500 }
-    );
+    console.error('Failed to fetch employees', error);
+    return NextResponse.json({ error: 'Erro ao buscar funcionários.' }, { status: 500 });
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const { userId, sessionClaims } = await auth();
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
+    const { userId, role: currentRole } = await getStaffManager();
+    if (!userId || !can(currentRole, 'manage_staff')) {
+      return NextResponse.json({ error: 'Não autorizado.' }, { status: 403 });
     }
 
-    const currentUserRole = (sessionClaims?.metadata as any)?.role;
-    if (currentUserRole !== 'dono' && currentUserRole !== 'gerente') {
-      return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
+    const input = createEmployeeSchema.safeParse(await request.json());
+    if (!input.success) {
+      return NextResponse.json({ error: 'Dados de funcionário inválidos.' }, { status: 400 });
     }
-
-    const body = await req.json();
-    const { email, password, firstName, lastName, role } = body;
-
-    if (!email || !password || !role) {
-      return NextResponse.json({ error: 'Dados obrigatórios ausentes.' }, { status: 400 });
-    }
-
-    // Restriction: Managers can only create 'funcionario'
-    if (currentUserRole === 'gerente' && role !== 'funcionario') {
-      return NextResponse.json(
-        { error: 'Gerentes só podem cadastrar funcionários.' },
-        { status: 403 }
-      );
+    if (currentRole === 'gerente' && input.data.role !== 'funcionario') {
+      return NextResponse.json({ error: 'Gerentes só podem cadastrar funcionários.' }, { status: 403 });
     }
 
     const client = await clerkClient();
-    
     const newUser = await client.users.createUser({
-      emailAddress: [email],
-      password,
-      firstName,
-      lastName,
-      publicMetadata: { role },
+      emailAddress: [input.data.email],
+      password: input.data.password,
+      firstName: input.data.firstName,
+      lastName: input.data.lastName,
+      publicMetadata: { role: input.data.role },
     });
 
     return NextResponse.json({
       id: newUser.id,
-      email: newUser.emailAddresses[0].emailAddress,
-      role: (newUser.publicMetadata as any).role,
-    });
-  } catch (error: any) {
-    console.error('Error creating employee:', error);
-    return NextResponse.json(
-      { error: error.errors?.[0]?.message || 'Erro ao criar funcionário.' },
-      { status: 500 }
-    );
+      email: newUser.emailAddresses[0]?.emailAddress,
+      role: input.data.role,
+    }, { status: 201 });
+  } catch (error) {
+    console.error('Failed to create employee', error);
+    return NextResponse.json({ error: 'Erro ao criar funcionário.' }, { status: 500 });
   }
 }

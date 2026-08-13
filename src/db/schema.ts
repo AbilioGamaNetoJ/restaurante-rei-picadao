@@ -153,6 +153,8 @@ export const orders = pgTable('orders', {
   paymentMethod: text('payment_method'),
   paymentStatus: text('payment_status'),
   asaasCheckoutUrl: text('asaas_checkout_url'),
+  trackingTokenHash: text('tracking_token_hash').unique(),
+  trackingTokenExpiresAt: timestamp('tracking_token_expires_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -206,6 +208,17 @@ export const orderItemAddonsRelations = relations(orderItemAddons, ({ one }) => 
     references: [orderItems.id],
   }),
 }));
+
+// Short-lived, server-issued delivery-fee quotes. No customer PII is stored here.
+export const deliveryQuotes = pgTable('delivery_quotes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  addressHash: text('address_hash').notNull(),
+  distanceKm: numeric('distance_km', { precision: 10, scale: 2 }).notNull(),
+  deliveryFee: numeric('delivery_fee', { precision: 10, scale: 2 }).notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  consumedAt: timestamp('consumed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
 
 // Store Settings
 export const storeSettings = pgTable('store_settings', {
@@ -297,6 +310,6 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
   endpoint: text('endpoint').notNull().unique(),
   p256dh: text('p256dh').notNull(),
   auth: text('auth').notNull(),
+  role: text('role').notNull().default('cliente'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
-

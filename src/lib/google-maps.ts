@@ -1,29 +1,27 @@
 export async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) throw new Error("GOOGLE_MAPS_API_KEY not configured.");
 
   // Add country and region hints for better accuracy in Brazil
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&components=country:BR&key=${apiKey}`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(8_000) });
     const data = await res.json();
 
     if (data.status !== "OK" || !data.results || data.results.length === 0) {
-      console.error("Geocoding API error:", data);
+      console.error("Geocoding API request failed", { status: data.status });
       return null;
     }
 
     // Check if the result is actually in the expected area (optional, but good for debugging)
     const location = data.results[0].geometry.location;
-    console.log(`Geocoded "${address}" to:`, location);
-    
     return {
       lat: location.lat,
       lng: location.lng,
     };
-  } catch (error) {
-    console.error("Failed to geocode address:", error);
+  } catch (error: unknown) {
+    console.error("Geocoding request failed", { reason: error instanceof Error ? error.name : 'UnknownError' });
     return null;
   }
 }
@@ -76,11 +74,10 @@ export async function calculateDistance(
         "X-Goog-FieldMask": "originIndex,destinationIndex,duration,distanceMeters,status",
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(8_000),
     });
 
     const data = await res.json();
-    console.log("Routes API response:", JSON.stringify(data, null, 2));
-
     if (!Array.isArray(data) || data.length === 0) {
       console.error("Routes API error: Not an array or empty.");
       return null;
@@ -89,12 +86,12 @@ export async function calculateDistance(
     const route = data[0];
     
     if (route.status?.code && route.status.code !== 0) {
-      console.error("Route error:", route.status);
+      console.error("Route API response contains an error");
       return null;
     }
 
     if (!route.duration || route.distanceMeters === undefined) {
-      console.error("Route error: Missing duration or distance data in response.", route);
+      console.error("Route API response is missing route data");
       return null;
     }
 
@@ -109,8 +106,8 @@ export async function calculateDistance(
       distanceKm,
       durationMin,
     };
-  } catch (error) {
-    console.error("Failed to calculate distance:", error);
+  } catch (error: unknown) {
+    console.error("Route API request failed", { reason: error instanceof Error ? error.name : 'UnknownError' });
     return null;
   }
 }

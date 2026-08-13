@@ -1,149 +1,148 @@
+import { createHash, timingSafeEqual } from 'crypto';
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
+import { and, eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
 import { db } from '@/db';
 import { orders, pushSubscriptions } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { refundPayment } from '@/lib/asaas';
 
-import { revalidatePath } from 'next/cache';
+const webhookSchema = z.object({
+  event: z.string().min(1).max(100),
+  payment: z.object({
+    id: z.string().min(1).max(120),
+    externalReference: z.string().uuid(),
+    billingType: z.string().min(1).max(60).optional(),
+    status: z.string().min(1).max(60).optional(),
+  }).passthrough(),
+}).passthrough();
 
-export async function POST(req: Request) {
+const paidEvents = new Set(['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED']);
+const cancelledEvents = new Set([
+  'PAYMENT_OVERDUE',
+  'PAYMENT_DELETED',
+  'PAYMENT_REFUNDED',
+  'PAYMENT_REPROVED_BY_RISK_ANALYSIS',
+]);
+
+function hasValidWebhookToken(receivedToken: string | null, configuredToken: string | undefined) {
+  if (!receivedToken || !configuredToken) return false;
+
+  const receivedHash = createHash('sha256').update(receivedToken).digest();
+  const configuredHash = createHash('sha256').update(configuredToken).digest();
+  return timingSafeEqual(receivedHash, configuredHash);
+}
+
+export async function POST(request: Request) {
+  const webhookToken = process.env.ASAAS_WEBHOOK_TOKEN;
+  if (!webhookToken) {
+    console.error('ASAAS_WEBHOOK_TOKEN is not configured');
+    return NextResponse.json({ error: 'Webhook unavailable.' }, { status: 503 });
+  }
+
+  if (!hasValidWebhookToken(request.headers.get('asaas-access-token'), webhookToken)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const body = await req.json();
-    const { event, payment } = body;
-
-    // Security: Validate Asaas token
-    const asaasToken = req.headers.get('asaas-access-token');
-    if (process.env.ASAAS_WEBHOOK_TOKEN && asaasToken !== process.env.ASAAS_WEBHOOK_TOKEN) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const input = webhookSchema.safeParse(await request.json());
+    if (!input.success) {
+      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
-    if (!payment || !payment.externalReference) {
-      return NextResponse.json({ received: true }, { status: 200 });
+    const { event, payment } = input.data;
+    if (!paidEvents.has(event) && !cancelledEvents.has(event)) {
+      return NextResponse.json({ received: true });
     }
 
-    const orderId = payment.externalReference;
-    let newStatus = undefined;
-
-    // Asaas events
-    // https://docs.asaas.com/docs/webhooks
-    if (event === 'PAYMENT_RECEIVED' || event === 'PAYMENT_CONFIRMED') {
-      newStatus = 'paid';
-    } else if (
-      event === 'PAYMENT_OVERDUE' ||
-      event === 'PAYMENT_DELETED' || 
-      event === 'PAYMENT_REFUNDED' || 
-      event === 'PAYMENT_REPROVED_BY_RISK_ANALYSIS'
-    ) {
-      newStatus = 'cancelled';
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, payment.externalReference),
+    });
+    if (!order) {
+      console.warn('Webhook received for unknown order', { event });
+      return NextResponse.json({ received: true });
     }
 
-    if (newStatus) {
-      // Try to update the order, with retry for race condition resilience
-      let updated = false;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const currentOrder = await db.query.orders.findFirst({
-          where: eq(orders.id, orderId)
-        });
-
-        if (currentOrder) {
-          // Se o pedido foi cancelado localmente, mas o Asaas confirmou o pagamento (ex: race condition do Pix)
-          if (currentOrder.status === 'cancelled' && newStatus === 'paid') {
-            console.log(`[webhook] Pagamento recebido para pedido já cancelado: ${orderId}. Iniciando estorno automático...`);
-            try {
-              const { refundPayment } = await import('@/lib/asaas');
-              await refundPayment(payment.id);
-            } catch (err) {
-              console.error(`[webhook] Erro ao estornar pagamento atrasado do pedido ${orderId}:`, err);
-            }
-            newStatus = 'cancelled'; // Mantém o status como cancelado
-          }
-
-          const result = await db.update(orders)
-            .set({ 
-              status: newStatus as any,
-              paymentId: payment.id,
-              paymentMethod: payment.billingType,
-              paymentStatus: payment.status
-            })
-            .where(eq(orders.id, orderId))
-            .returning({ id: orders.id });
-
-          if (result.length > 0) {
-            updated = true;
-
-            // Send push notification for paid orders
-            if (newStatus === 'paid') {
-              await sendOrderPushNotifications(currentOrder.customerName, orderId);
-            }
-
-            break;
-          }
+    if (paidEvents.has(event)) {
+      if (order.status === 'cancelled') {
+        try {
+          await refundPayment(payment.id);
+        } catch {
+          console.error('Late payment refund failed', { orderId: order.id });
+          return NextResponse.json({ error: 'Refund pending' }, { status: 500 });
         }
-
-        // Order not found yet — might still be inserting (race condition)
-        // Wait briefly and retry
-        if (attempt < 2) {
-          console.warn(`[webhook] Order ${orderId} not found (attempt ${attempt + 1}/3), retrying in 2s...`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
+        return NextResponse.json({ received: true });
       }
 
-      if (!updated) {
-        console.error(`[webhook] Order ${orderId} not found after 3 attempts for event ${event}`);
+      if (order.status === 'pending') {
+        const [updatedOrder] = await db.update(orders)
+          .set({
+            status: 'paid',
+            paymentId: payment.id,
+            paymentMethod: payment.billingType ?? null,
+            paymentStatus: payment.status ?? null,
+            updatedAt: new Date(),
+          })
+          .where(and(eq(orders.id, order.id), eq(orders.status, 'pending')))
+          .returning({ id: orders.id });
+
+        if (updatedOrder) await sendOrderPushNotifications(order.id);
       }
-        
-      revalidatePath('/dashboard');
-      revalidatePath('/pedidos');
     }
 
-    return NextResponse.json({ received: true }, { status: 200 });
+    if (cancelledEvents.has(event) && !['delivered', 'cancelled'].includes(order.status)) {
+      await db.update(orders)
+        .set({
+          status: 'cancelled',
+          paymentId: payment.id,
+          paymentMethod: payment.billingType ?? null,
+          paymentStatus: payment.status ?? null,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(orders.id, order.id),
+          inArray(orders.status, ['pending', 'paid', 'preparing', 'ready', 'delivering']),
+        ));
+    }
+
+    revalidatePath('/dashboard');
+    revalidatePath('/pedidos');
+    return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('Webhook Asaas error:', error);
-    // Return 200 anyway so Asaas doesn't retry unnecessarily if it's our internal parsing error,
-    // though usually you'd return 500 to force a retry if it's a DB error.
+    console.error('Asaas webhook processing failed', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
-async function sendOrderPushNotifications(customerName: string, orderId: string) {
+async function sendOrderPushNotifications(orderId: string) {
   try {
-    // Only send if VAPID keys are configured
-    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-      return;
-    }
+    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return;
 
-    const { sendPushNotification } = await import('@/lib/web-push');
-
-    // Get all push subscriptions
-    const subscriptions = await db.select().from(pushSubscriptions);
-
+    const subscriptions = await db.select().from(pushSubscriptions).where(inArray(
+      pushSubscriptions.role,
+      ['dono', 'gerente', 'funcionario'],
+    ));
     if (subscriptions.length === 0) return;
 
+    const { sendPushNotification } = await import('@/lib/web-push');
     const shortId = orderId.slice(0, 8).toUpperCase();
     const payload = {
-      title: '🔥 Novo Pedido!',
-      body: `Pedido #${shortId} de ${customerName} foi pago`,
+      title: 'Novo pedido pago',
+      body: `Pedido #${shortId} foi pago.`,
       url: '/pedidos',
       tag: `order-${orderId}`,
     };
 
-    // Send to all subscriptions, clean up expired ones
-    const results = await Promise.allSettled(
-      subscriptions.map(async (sub) => {
-        try {
-          await sendPushNotification(sub, payload);
-        } catch (error: any) {
-          if (error.message === 'SUBSCRIPTION_EXPIRED') {
-            await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id));
-            console.log(`[push] Cleaned up expired subscription: ${sub.endpoint.slice(0, 50)}...`);
-          }
+    await Promise.allSettled(subscriptions.map(async (subscription) => {
+      try {
+        await sendPushNotification(subscription, payload);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'SUBSCRIPTION_EXPIRED') {
+          await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, subscription.id));
         }
-      })
-    );
-
-    const sent = results.filter(r => r.status === 'fulfilled').length;
-    console.log(`[push] Sent ${sent}/${subscriptions.length} push notifications for order ${shortId}`);
+      }
+    }));
   } catch (error) {
-    // Push notification failure should not break the webhook
-    console.error('[push] Failed to send order notifications:', error);
+    console.error('Order push notification failed', error);
   }
 }

@@ -1,71 +1,65 @@
 import { NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
+import { z } from 'zod';
 import { db } from '@/db';
 import { orders } from '@/db/schema';
-import { eq } from 'drizzle-orm';
 import { getPaymentByExternalReference } from '@/lib/asaas';
+import { getTrackableOrder } from '@/lib/order-access';
+import { checkRateLimit, createRateLimitHeaders, getRequestIp } from '@/lib/rate-limit';
 
-/**
- * GET /api/orders/check-status?orderId=xxx
- * 
- * Fallback endpoint that checks payment status directly with the Asaas API
- * when the webhook hasn't updated the order yet (race condition mitigation).
- * 
- * Flow:
- * 1. Fetch order from DB
- * 2. If status is 'pending', query Asaas API directly
- * 3. If Asaas says RECEIVED/CONFIRMED, update DB to 'paid'
- * 4. Return current status
- */
-export async function GET(req: Request) {
+const trackingQuerySchema = z.object({
+  orderId: z.string().uuid(),
+  token: z.string().min(32).max(128),
+});
+
+export async function GET(request: Request) {
+  const rateLimit = await checkRateLimit('orderStatus', getRequestIp(request));
+  const rateLimitHeaders = createRateLimitHeaders(rateLimit);
+
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: rateLimit.unavailable ? 'Serviço temporariamente indisponível.' : 'Muitas consultas. Aguarde antes de tentar novamente.' },
+      { status: rateLimit.unavailable ? 503 : 429, headers: rateLimitHeaders },
+    );
+  }
+
+  const searchParams = new URL(request.url).searchParams;
+  const validation = trackingQuerySchema.safeParse({
+    orderId: searchParams.get('orderId'),
+    token: searchParams.get('token'),
+  });
+
+  if (!validation.success) {
+    return NextResponse.json({ error: 'Pedido não encontrado.' }, { status: 404, headers: rateLimitHeaders });
+  }
+
   try {
-    const { searchParams } = new URL(req.url);
-    const orderId = searchParams.get('orderId');
-
-    if (!orderId) {
-      return NextResponse.json({ error: 'orderId is required' }, { status: 400 });
-    }
-
-    // 1. Get current order status from DB
-    const order = await db.query.orders.findFirst({
-      where: eq(orders.id, orderId),
-      columns: { status: true },
-    });
-
+    const order = await getTrackableOrder(validation.data.orderId, validation.data.token);
     if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Pedido não encontrado.' }, { status: 404, headers: rateLimitHeaders });
     }
 
-    // 2. If already past pending, return current status (no need to check Asaas)
     if (order.status !== 'pending') {
-      return NextResponse.json({ status: order.status });
+      return NextResponse.json({ status: order.status }, { headers: rateLimitHeaders });
     }
 
-    // 3. Status is 'pending' — check Asaas API directly as fallback
-    const asaasPayment = await getPaymentByExternalReference(orderId);
+    const payment = await getPaymentByExternalReference(order.id);
+    if (payment && ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'].includes(payment.status)) {
+      await db.update(orders)
+        .set({
+          status: 'paid',
+          paymentId: payment.id,
+          paymentMethod: payment.billingType,
+          paymentStatus: payment.status,
+        })
+        .where(eq(orders.id, order.id));
 
-    if (asaasPayment) {
-      const paidStatuses = ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'];
-      
-      if (paidStatuses.includes(asaasPayment.status)) {
-        // Asaas confirms payment — update our DB (webhook missed or arrived too early)
-        await db.update(orders)
-          .set({
-            status: 'paid' as any,
-            paymentId: asaasPayment.id,
-            paymentMethod: asaasPayment.billingType,
-            paymentStatus: asaasPayment.status,
-          })
-          .where(eq(orders.id, orderId));
-
-        console.log(`[check-status] Fallback sync: Order ${orderId} updated to 'paid' via Asaas API`);
-        return NextResponse.json({ status: 'paid' });
-      }
+      return NextResponse.json({ status: 'paid' }, { headers: rateLimitHeaders });
     }
 
-    // 4. Still pending
-    return NextResponse.json({ status: 'pending' });
+    return NextResponse.json({ status: 'pending' }, { headers: rateLimitHeaders });
   } catch (error) {
-    console.error('[check-status] Error:', error);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    console.error('Order status check failed', error);
+    return NextResponse.json({ error: 'Não foi possível consultar o pedido.' }, { status: 502, headers: rateLimitHeaders });
   }
 }

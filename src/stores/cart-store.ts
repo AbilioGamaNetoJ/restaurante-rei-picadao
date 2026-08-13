@@ -35,8 +35,7 @@ export interface CheckoutData {
   addressZip: string;
   distanceKm: number;
   deliveryFee: number;
-  lat?: number;
-  lng?: number;
+  deliveryQuoteId: string;
 }
 
 interface CartState {
@@ -90,6 +89,16 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'rei-do-picadao-cart',
+      version: 1,
+      // Dados pessoais e observações do pedido não devem permanecer no navegador.
+      partialize: (state) => ({
+        items: state.items.map((item) => ({ ...item, comment: undefined })),
+      }),
+      migrate: () => ({
+        items: [],
+        checkoutData: null,
+        isDrawerOpen: false,
+      }),
     }
   )
 );

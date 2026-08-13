@@ -14,8 +14,41 @@ import { updateOrderStatus, deleteOrder } from './actions';
 
 type OrderStatus = 'pending' | 'paid' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
 
+type OrderAddon = {
+  id: string;
+  addonName: string;
+  quantity: number;
+  imageUrl: string | null;
+};
+
+type OrderItem = {
+  id: string;
+  productName: string;
+  quantity: number;
+  subtotal: string;
+  comment: string | null;
+  product: { imageUrl: string | null } | null;
+  addons: OrderAddon[];
+};
+
+type DashboardOrder = {
+  id: string;
+  status: OrderStatus;
+  createdAt: Date;
+  customerName: string;
+  customerPhone: string;
+  addressStreet: string;
+  addressNumber: string;
+  addressComplement: string | null;
+  addressNeighborhood: string;
+  addressCity: string;
+  deliveryFee: string;
+  total: string;
+  items: OrderItem[];
+};
+
 const statusMap: Record<OrderStatus, { label: string; color: string; next?: { status: OrderStatus; label: string } }> = {
-  pending: { label: 'Aguardando Pagamento', color: 'bg-yellow-500', next: { status: 'paid', label: 'Marcar como Pago' } },
+  pending: { label: 'Aguardando Pagamento', color: 'bg-yellow-500' },
   paid: { label: 'Pago', color: 'bg-blue-500', next: { status: 'preparing', label: 'Iniciar Preparo' } },
   preparing: { label: 'Preparando', color: 'bg-purple-500', next: { status: 'ready', label: 'Pronto para Entrega' } },
   ready: { label: 'Pronto', color: 'bg-orange-500', next: { status: 'delivering', label: 'Saiu para Entrega' } },
@@ -33,7 +66,7 @@ const tabs: { value: string; label: string; statuses: OrderStatus[] }[] = [
 
 const REFRESH_INTERVAL_MS = 15000;
 
-export function PedidosClient({ initialOrders }: { initialOrders: any[] }) {
+export function PedidosClient({ initialOrders }: { initialOrders: DashboardOrder[] }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('active');
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -85,7 +118,7 @@ export function PedidosClient({ initialOrders }: { initialOrders: any[] }) {
         await updateOrderStatus(orderId, newStatus);
         toast.success(`Status atualizado para ${statusMap[newStatus].label}`);
         refresh();
-      } catch (error) {
+      } catch {
         toast.error('Erro ao atualizar status');
       }
     });
@@ -101,13 +134,13 @@ export function PedidosClient({ initialOrders }: { initialOrders: any[] }) {
         await deleteOrder(orderId);
         toast.success('Pedido excluído com sucesso');
         refresh();
-      } catch (error) {
+      } catch {
         toast.error('Erro ao excluir pedido');
       }
     });
   };
 
-  function renderOrderCard(order: any) {
+  function renderOrderCard(order: DashboardOrder) {
     const config = statusMap[order.status as OrderStatus];
     
     return (
@@ -140,7 +173,7 @@ export function PedidosClient({ initialOrders }: { initialOrders: any[] }) {
           <Separator />
           
           <div className="space-y-2">
-            {order.items.map((item: any) => (
+            {order.items.map((item) => (
               <div key={item.id} className="text-sm">
                 <div className="flex justify-between font-medium items-start">
                   <div className="flex gap-2">
@@ -157,7 +190,7 @@ export function PedidosClient({ initialOrders }: { initialOrders: any[] }) {
                 </div>
                 {item.addons?.length > 0 && (
                   <div className="pl-4 text-xs text-muted-foreground space-y-1 mt-1">
-                    {item.addons.map((addon: any) => (
+                    {item.addons.map((addon) => (
                       <div key={addon.id} className="flex items-center gap-2">
                         {addon.imageUrl && (
                           <img 

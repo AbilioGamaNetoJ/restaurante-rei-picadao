@@ -5,13 +5,13 @@ import { db } from '@/db';
 import { expenses, orders } from '@/db/schema';
 import { FinanceiroClient } from './financeiro-client';
 import { desc } from 'drizzle-orm';
+import { can, getRoleFromClaims } from '@/lib/permissions';
 
 export default async function FinanceiroPage() {
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
+  const role = getRoleFromClaims(sessionClaims);
 
-  // Apenas donos devem ver o financeiro
-  if (!userId || role !== 'dono') {
+  if (!userId || !can(role, 'view_finance')) {
     redirect('/dashboard');
   }
 

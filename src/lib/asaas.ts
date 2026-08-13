@@ -1,4 +1,13 @@
 const ASAAS_API_URL = process.env.ASAAS_API_URL || 'https://sandbox.asaas.com/api/v3';
+const ASAAS_TIMEOUT_MS = 10_000;
+
+function asaasFetch(url: string, init?: RequestInit) {
+  return fetch(url, { ...init, signal: AbortSignal.timeout(ASAAS_TIMEOUT_MS) });
+}
+
+function errorName(error: unknown) {
+  return error instanceof Error ? error.name : 'UnknownError';
+}
 
 interface AsaasCustomer {
   id: string;
@@ -10,6 +19,32 @@ interface AsaasPayment {
   billingType: string;
   externalReference: string;
 }
+
+type AsaasCustomerUpdate = {
+  phone: string;
+  mobilePhone: string;
+  postalCode?: string;
+  address?: string;
+  addressNumber?: string;
+  province?: string;
+  complement?: string;
+};
+
+type AsaasCustomerCreate = AsaasCustomerUpdate & {
+  name: string;
+  email: string;
+  cpfCnpj: string;
+};
+
+type AsaasCheckoutCreate = {
+  customer: string;
+  billingType: 'PIX' | 'CREDIT_CARD' | 'UNDEFINED';
+  value: number;
+  dueDate: string;
+  description: string;
+  externalReference: string;
+  callback: { successUrl: string; autoRedirect: boolean };
+};
 
 export async function createAsaasCustomer(
   name: string, 
@@ -31,11 +66,6 @@ export async function createAsaasCustomer(
     throw new Error("ASAAS_API_KEY not configured. Please check your .env file and restart the server.");
   }
   
-  console.log('Asaas Customer - API Key Check:', { 
-    prefix: apiKey.substring(0, 5), 
-    length: apiKey.length 
-  });
-
   // Strip formatting from cpfCnpj and phone (remove dots, dashes, slashes, spaces, parens)
   const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
   const cleanPhone = phone.replace(/\D/g, '');
@@ -45,7 +75,7 @@ export async function createAsaasCustomer(
 
   try {
     // First, check if customer exists
-    const searchRes = await fetch(`${ASAAS_API_URL}/customers?email=${encodeURIComponent(email)}`, {
+    const searchRes = await asaasFetch(`${ASAAS_API_URL}/customers?email=${encodeURIComponent(email)}`, {
       headers: {
         'access_token': apiKey,
       }
@@ -55,7 +85,7 @@ export async function createAsaasCustomer(
       const searchData = await searchRes.json();
       if (searchData.data && searchData.data.length > 0) {
         const customerId = searchData.data[0].id;
-        const updateBody: any = {
+        const updateBody: AsaasCustomerUpdate = {
           phone: cleanPhone,
           mobilePhone: cleanPhone,
         };
@@ -69,7 +99,7 @@ export async function createAsaasCustomer(
           if (addressData.addressComplement) updateBody.complement = addressData.addressComplement;
         }
         
-        const updateRes = await fetch(`${ASAAS_API_URL}/customers/${customerId}`, {
+        const updateRes = await asaasFetch(`${ASAAS_API_URL}/customers/${customerId}`, {
           method: 'POST', // Asaas uses POST /customers/{id} for updates
           headers: {
             'Content-Type': 'application/json',
@@ -79,8 +109,7 @@ export async function createAsaasCustomer(
         });
 
         if (!updateRes.ok) {
-          const errText = await updateRes.text();
-          console.error("Asaas update failed for customer", customerId, ":", errText);
+          console.error('Asaas customer update failed', { status: updateRes.status });
           // We don't throw here to not block the checkout, but the phone won't update
         }
         
@@ -89,7 +118,7 @@ export async function createAsaasCustomer(
     }
 
     // Create new customer
-    const requestBody: any = {
+    const requestBody: AsaasCustomerCreate = {
       name,
       email,
       phone: cleanPhone,
@@ -105,7 +134,7 @@ export async function createAsaasCustomer(
       requestBody.province = addressData.addressNeighborhood;
     }
 
-    const res = await fetch(`${ASAAS_API_URL}/customers`, {
+    const res = await asaasFetch(`${ASAAS_API_URL}/customers`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -116,13 +145,13 @@ export async function createAsaasCustomer(
 
     const data = await res.json();
     if (!res.ok) {
-      console.error('Error creating Asaas customer:', data);
-      throw new Error(`Asaas Customer Error: ${JSON.stringify(data)}`);
+      console.error('Asaas customer creation failed', { status: res.status });
+      throw new Error('Asaas Customer Error');
     }
 
     return { id: data.id };
-  } catch (error: any) {
-    console.error('Error in createAsaasCustomer:', error);
+  } catch (error: unknown) {
+    console.error('Asaas customer operation failed', { reason: errorName(error) });
     throw error;
   }
 }
@@ -132,24 +161,19 @@ export async function createCheckout(
   customerId: string, 
   value: number, 
   description: string,
+  trackingToken: string,
   billingType: 'PIX' | 'CREDIT_CARD' | 'UNDEFINED' = 'UNDEFINED'
 ): Promise<{ invoiceUrl: string, paymentId: string } | null> {
   const apiKey = process.env.ASAAS_API_KEY;
   if (!apiKey) throw new Error("ASAAS_API_KEY not configured.");
   
-  console.log('Asaas API Key Check:', { 
-    prefix: apiKey.substring(0, 5), 
-    length: apiKey.length,
-    isExpanded: apiKey.includes('$') && apiKey.length > 10 
-  });
-
   const dueDate = new Date();
   // dueDate.setDate(dueDate.getDate() + 1); // Removido: Restaurantes precisam de vencimento no mesmo dia
 
   try {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-    const paymentBody: any = {
+    const paymentBody: AsaasCheckoutCreate = {
       customer: customerId,
       billingType,
       value,
@@ -157,12 +181,12 @@ export async function createCheckout(
       description,
       externalReference: orderId,
       callback: {
-        successUrl: `${appUrl}/checkout/confirmacao?orderId=${orderId}`,
+        successUrl: `${appUrl}/checkout/confirmacao?orderId=${encodeURIComponent(orderId)}&token=${encodeURIComponent(trackingToken)}`,
         autoRedirect: true // Restaurado para true. Em false o Asaas nem sequer tenta redirecionar e também não mostra o botão.
       }
     };
 
-    const res = await fetch(`${ASAAS_API_URL}/payments`, {
+    const res = await asaasFetch(`${ASAAS_API_URL}/payments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -172,15 +196,14 @@ export async function createCheckout(
     });
 
     const data = await res.json();
-    console.log('Asaas Payment Response:', { status: res.status, data });
     if (!res.ok) {
-      console.error('Error creating Asaas payment:', data);
-      throw new Error(`Asaas Payment Error: ${JSON.stringify(data)}`);
+      console.error('Asaas payment creation failed', { status: res.status });
+      throw new Error('Asaas Payment Error');
     }
 
     return { invoiceUrl: data.invoiceUrl, paymentId: data.id };
-  } catch (error: any) {
-    console.error('Error in createCheckout:', error);
+  } catch (error: unknown) {
+    console.error('Asaas checkout operation failed', { reason: errorName(error) });
     throw error;
   }
 }
@@ -194,7 +217,7 @@ export async function getPaymentByExternalReference(orderId: string): Promise<As
   if (!apiKey) throw new Error("ASAAS_API_KEY not configured.");
 
   try {
-    const res = await fetch(
+    const res = await asaasFetch(
       `${ASAAS_API_URL}/payments?externalReference=${encodeURIComponent(orderId)}`,
       {
         headers: { 'access_token': apiKey },
@@ -203,7 +226,7 @@ export async function getPaymentByExternalReference(orderId: string): Promise<As
     );
 
     if (!res.ok) {
-      console.error('Error fetching Asaas payment:', await res.text());
+      console.error('Asaas payment lookup failed', { status: res.status });
       return null;
     }
 
@@ -219,8 +242,8 @@ export async function getPaymentByExternalReference(orderId: string): Promise<As
     }
 
     return null;
-  } catch (error) {
-    console.error('Error in getPaymentByExternalReference:', error);
+  } catch (error: unknown) {
+    console.error('Asaas payment lookup failed', { reason: errorName(error) });
     return null;
   }
 }
@@ -234,7 +257,7 @@ export async function refundPayment(paymentId: string): Promise<boolean> {
   if (!apiKey) throw new Error("ASAAS_API_KEY not configured.");
 
   try {
-    const res = await fetch(`${ASAAS_API_URL}/payments/${paymentId}/refund`, {
+    const res = await asaasFetch(`${ASAAS_API_URL}/payments/${paymentId}/refund`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -243,14 +266,13 @@ export async function refundPayment(paymentId: string): Promise<boolean> {
     });
 
     if (!res.ok) {
-      const errorData = await res.text();
-      console.error('Error refunding Asaas payment:', errorData);
-      throw new Error(`Asaas Refund Error: ${errorData}`);
+      console.error('Asaas payment refund failed', { status: res.status });
+      throw new Error('Asaas Refund Error');
     }
 
     return true;
-  } catch (error) {
-    console.error('Error in refundPayment:', error);
+  } catch (error: unknown) {
+    console.error('Asaas payment refund failed', { reason: errorName(error) });
     throw error;
   }
 }
@@ -264,7 +286,7 @@ export async function deletePayment(paymentId: string): Promise<boolean> {
   if (!apiKey) throw new Error("ASAAS_API_KEY not configured.");
 
   try {
-    const res = await fetch(`${ASAAS_API_URL}/payments/${paymentId}`, {
+    const res = await asaasFetch(`${ASAAS_API_URL}/payments/${paymentId}`, {
       method: 'DELETE',
       headers: {
         'access_token': apiKey,
@@ -272,16 +294,13 @@ export async function deletePayment(paymentId: string): Promise<boolean> {
     });
 
     if (!res.ok) {
-      const errorData = await res.text();
-      console.error('Error deleting Asaas payment:', errorData);
-      throw new Error(`Asaas Delete Error: ${errorData}`);
+      console.error('Asaas payment deletion failed', { status: res.status });
+      throw new Error('Asaas Delete Error');
     }
 
     return true;
-  } catch (error) {
-    console.error('Error in deletePayment:', error);
+  } catch (error: unknown) {
+    console.error('Asaas payment deletion failed', { reason: errorName(error) });
     throw error;
   }
 }
-
-

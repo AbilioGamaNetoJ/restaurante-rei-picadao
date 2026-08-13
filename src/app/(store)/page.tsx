@@ -1,13 +1,13 @@
 import * as React from 'react';
 import { db } from "@/db";
-import { categories, products, productAddons, addons, storeHours } from "@/db/schema";
+import { categories, products, storeHours } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { StorefrontClient } from "./storefront-client";
+import { publicProductColumns, toPublicProduct } from '@/lib/public-catalog';
 
 export const revalidate = 60; // revalidate every minute
 
 async function getStoreStatus() {
-  const now = new Date();
   // Adjust for local timezone if needed, assuming server is in local or UTC
   // Local time handling can be tricky, for simplicity we assume the server time is aligned or we handle it via client, 
   // but let's do a simple check. Actually, it's safer to just return the hours and let client check, 
@@ -32,14 +32,16 @@ export default async function StorePage() {
   const allProducts = await db.query.products.findMany({
     where: eq(products.isAvailable, true),
     orderBy: [asc(products.sortOrder)],
+    columns: publicProductColumns,
     with: {
-      categories: true,
+      categories: {
+        columns: { categoryId: true },
+      },
       addons: {
         with: {
           addon: {
-            with: {
-              category: true
-            }
+            columns: { id: true, name: true, price: true, imageUrl: true },
+            with: { category: { columns: { id: true, name: true } } },
           }
         }
       }
@@ -52,7 +54,7 @@ export default async function StorePage() {
   return (
     <StorefrontClient 
       categories={allCategories} 
-      products={allProducts} 
+      products={allProducts.map(toPublicProduct)}
       hours={hours} 
       settings={settings}
     />

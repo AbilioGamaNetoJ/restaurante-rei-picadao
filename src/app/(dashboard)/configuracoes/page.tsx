@@ -5,13 +5,13 @@ import { db } from '@/db';
 import { storeSettings, storeHours } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { ConfiguracoesClient } from './configuracoes-client';
+import { can, getRoleFromClaims } from '@/lib/permissions';
 
 export default async function ConfiguracoesPage() {
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
+  const role = getRoleFromClaims(sessionClaims);
 
-  // Apenas donos devem ver as configurações
-  if (!userId || role !== 'dono') {
+  if (!userId || !can(role, 'edit_settings')) {
     redirect('/dashboard');
   }
 

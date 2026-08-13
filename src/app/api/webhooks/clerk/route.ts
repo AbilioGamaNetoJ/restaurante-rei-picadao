@@ -7,7 +7,13 @@ export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
   if (!WEBHOOK_SECRET) {
-    throw new Error('Please add CLERK_WEBHOOK_SECRET from Clerk Dashboard to .env or .env.local');
+    console.error('CLERK_WEBHOOK_SECRET is not configured');
+    return new Response('Webhook unavailable', { status: 503 });
+  }
+
+  const contentLength = Number(req.headers.get('content-length') ?? 0);
+  if (contentLength > 1_000_000) {
+    return new Response('Payload too large', { status: 413 });
   }
 
   // Get the headers
@@ -24,10 +30,13 @@ export async function POST(req: Request) {
   }
 
   // Get the body
-  const payload = await req.json();
-  const body = JSON.stringify(payload);
+  const body = await req.text();
+  if (body.length > 1_000_000) {
+    return new Response('Payload too large', { status: 413 });
+  }
 
   let evt: WebhookEvent;
+  const bypassEnabled = process.env.ENABLE_WEBHOOK_BYPASS === 'true';
   const isDev = process.env.NODE_ENV === 'development';
   const bypass = headerPayload.get('x-test-bypass') === 'true';
   const bypassKey = headerPayload.get('x-test-bypass-key');
@@ -35,12 +44,12 @@ export async function POST(req: Request) {
 
   // Verify the payload with the headers
   try {
-    if (isDev && bypass) {
+    if (bypassEnabled && isDev && bypass) {
       if (!configuredBypassKey || bypassKey !== configuredBypassKey) {
-        console.error('Clerk webhook bypass attempted but key is missing or invalid');
+        console.error('Clerk webhook bypass attempted with an invalid key');
         return new Response('Unauthorized bypass attempt', { status: 401 });
       }
-      evt = payload as WebhookEvent;
+      evt = JSON.parse(body) as WebhookEvent;
       console.log('Clerk webhook bypass verified and enabled for testing');
     } else {
       // Create a new Svix instance with your secret.
@@ -52,8 +61,8 @@ export async function POST(req: Request) {
         'svix-signature': svix_signature,
       }) as WebhookEvent;
     }
-  } catch (err) {
-    console.error('Error verifying webhook:', err);
+  } catch {
+    console.error('Clerk webhook signature verification failed');
     return new Response('Error occured', {
       status: 400,
     });
@@ -62,10 +71,10 @@ export async function POST(req: Request) {
   const eventType = evt.type;
 
   if (eventType === 'user.created' || eventType === 'user.updated') {
-    const { id } = evt.data as any;
+    const { id } = evt.data;
     
-    if (isDev && bypass) {
-      console.log(`[TEST] Clerk metadata update bypassed for user: ${id}`);
+    if (bypassEnabled && isDev && bypass) {
+      console.log('Clerk metadata update bypassed for testing');
     } else {
       // Set default role to 'cliente' if not already set
       try {
@@ -78,20 +87,16 @@ export async function POST(req: Request) {
               role: 'cliente',
             },
           });
-          console.log(`User ${id} metadata updated with default role: cliente`);
+          console.log('Clerk user metadata updated with default role');
         }
       } catch (error) {
-        console.error(`Error updating Clerk user ${id}:`, error);
+        console.error('Failed to update Clerk user metadata', error);
       }
     }
   }
 
   if (eventType === 'user.deleted') {
-    const { id } = evt.data as any;
-    // Note: Clerk doesn't provide email in user.deleted directly in the payload sometimes 
-    // or it's hard to get. If we had a users table we would delete by clerkId.
-    // Since we only have saved_addresses by email, we might need to have stored the email.
-    console.log(`User ${id} deleted in Clerk`);
+    console.log('Clerk user deletion received');
   }
 
   return new Response('', { status: 200 });

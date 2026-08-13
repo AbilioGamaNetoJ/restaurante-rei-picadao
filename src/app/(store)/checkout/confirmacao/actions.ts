@@ -1,39 +1,38 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 import { db } from '@/db';
 import { orders } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
+import { and, eq } from 'drizzle-orm';
+import { getTrackableOrder } from '@/lib/order-access';
 
-export async function getOrderStatus(orderId: string) {
-  try {
-    const order = await db.query.orders.findFirst({
-      where: eq(orders.id, orderId),
-      columns: {
-        status: true,
-      }
-    });
-    
-    return order?.status || null;
-  } catch (error) {
-    console.error('Error fetching order status:', error);
-    return null;
-  }
-}
+const confirmDeliverySchema = z.object({
+  orderId: z.string().uuid(),
+  trackingToken: z.string().min(32).max(256),
+});
 
-export async function confirmOrderDelivery(orderId: string) {
+export async function confirmOrderDelivery(orderId: string, trackingToken: string) {
+  const input = confirmDeliverySchema.safeParse({ orderId, trackingToken });
+  if (!input.success) return { success: false };
+
   try {
-    await db.update(orders)
-      .set({ status: 'delivered' })
-      .where(eq(orders.id, orderId));
-      
+    const order = await getTrackableOrder(input.data.orderId, input.data.trackingToken);
+    if (!order || order.status !== 'delivering') return { success: false };
+
+    const [updatedOrder] = await db
+      .update(orders)
+      .set({ status: 'delivered', updatedAt: new Date() })
+      .where(and(eq(orders.id, order.id), eq(orders.status, 'delivering')))
+      .returning({ id: orders.id });
+
+    if (!updatedOrder) return { success: false };
+
     revalidatePath('/dashboard');
     revalidatePath('/pedidos');
-    revalidatePath(`/checkout/confirmacao`);
-    
     return { success: true };
   } catch (error) {
     console.error('Error confirming delivery:', error);
-    return { success: false, error: 'Erro ao confirmar entrega' };
+    return { success: false };
   }
 }

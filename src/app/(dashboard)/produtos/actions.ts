@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { products, productAddons, productCategories } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { can, getRoleFromClaims } from '@/lib/permissions';
 
 export async function createProduct(data: { 
   name: string; 
@@ -21,9 +22,9 @@ export async function createProduct(data: {
 }) {
   try {
     const { userId, sessionClaims } = await auth();
-    const role = (sessionClaims?.metadata as any)?.role;
-    
-    if (!userId || (role !== 'dono' && role !== 'gerente')) {
+    const role = getRoleFromClaims(sessionClaims);
+
+    if (!userId || !can(role, 'manage_products')) {
       throw new Error('Não autorizado');
     }
 
@@ -90,9 +91,9 @@ export async function updateProduct(id: string, data: {
 }) {
   try {
     const { userId, sessionClaims } = await auth();
-    const role = (sessionClaims?.metadata as any)?.role;
-    
-    if (!userId || (role !== 'dono' && role !== 'gerente')) {
+    const role = getRoleFromClaims(sessionClaims);
+
+    if (!userId || !can(role, 'manage_products')) {
       throw new Error('Não autorizado');
     }
 
@@ -152,9 +153,9 @@ export async function updateProduct(id: string, data: {
 
 export async function deleteProduct(id: string) {
   const { userId, sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as any)?.role;
-  
-  if (!userId || (role !== 'dono' && role !== 'gerente')) {
+  const role = getRoleFromClaims(sessionClaims);
+
+  if (!userId || !can(role, 'manage_products')) {
     throw new Error('Não autorizado');
   }
 
