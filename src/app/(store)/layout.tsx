@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import Link from "next/link";
+import { connection } from "next/server";
 import { db } from "@/db";
 import { StoreIcon } from "@/components/store/store-icons";
 import { CartDrawer } from "@/components/store/cart-drawer";
@@ -8,6 +9,8 @@ import { can } from "@/lib/permissions";
 import { LayoutDashboard } from "lucide-react";
 
 export default async function StoreLayout({ children }: Readonly<{ children: ReactNode }>) {
+  await connection();
+
   const settings = await db.query.storeSettings.findFirst();
   const storeName = settings?.name || "Rei do Picadão";
   const logoUrl = settings?.logoUrl;
