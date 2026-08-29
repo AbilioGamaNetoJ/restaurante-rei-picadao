@@ -22,6 +22,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: "Rei do Picadão",
   description: "A melhor porção da cidade!",
   appleWebApp: {
@@ -37,6 +38,26 @@ export const metadata: Metadata = {
     apple: [
       { url: "/icons/apple-touch-icon.png", sizes: "180x180" },
     ],
+  },
+  openGraph: {
+    title: "Rei do Picadão",
+    description: "A melhor porção da cidade!",
+    locale: "pt_BR",
+    type: "website",
+    images: [
+      {
+        url: "/images/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Rei do Picadão - Delivery de porções",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Rei do Picadão",
+    description: "A melhor porção da cidade!",
+    images: ["/images/og-image.jpg"],
   },
 };
 
