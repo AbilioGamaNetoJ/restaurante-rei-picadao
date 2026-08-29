@@ -22,7 +22,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://restaurante-rei-picadao.vercel.app"),
   title: "Rei do Picadão",
   description: "A melhor porção da cidade!",
   appleWebApp: {
